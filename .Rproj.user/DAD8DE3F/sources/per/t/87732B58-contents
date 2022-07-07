@@ -1,0 +1,877 @@
+
+####First NA finder
+first_last_NA_pos <- function(vec){
+  NonNAindex <- which(!is.na(vec))
+  firstNonNA <- min(NonNAindex)
+  lastNonNA <- max(NonNAindex)
+  return(c(min=firstNonNA,max=lastNonNA))
+}
+
+
+####ggplotly ...
+library(ggplot2)
+library(plotly)
+# library(glue)
+ggplotler <- function(data, x, y){
+  g <- ggplot(data=data, aes_string(x=x,y=y)) + geom_point() + theme_bw()
+  return(ggplotly(g))
+}
+
+
+###########################temporal variables after https://www.sciencedirect.com/science/article/pii/S0168192321002124#tbl0003
+library(lubridate)
+temporal_calculators <- function(df, datetime="datetime"){
+  df$doy <- lubridate::yday(df[[datetime]])
+  df$yearly_sin <- sin(2 * pi * (df$doy - 1) / 365)
+  df$yearly_cos <- cos(2 * pi * (df$doy - 1) / 365)
+  df$delta <- lubridate::decimal_date(df[[datetime]]) - lubridate::year(df[[datetime]])
+  return(df)
+}
+
+  
+########################################################################################
+######################GAPFILLING ENV. Variables from diff sites##############################
+########################################################################################
+
+
+#This code is for gapfilling an environnemental variable from the other sites (3 other sites considered in this case)
+
+#' @param datetime is the name of datetime (POSIXct object) in each table
+#' @param df_to_fill is the dataframe containing the column to gapfill
+
+#The following list of dataframes are the other sites
+
+#' @param ind_df1 is the 1st dataframe containing the column(s) to use in the regression
+#' @param ind_df2 is the 2nd dataframe containing the column(s) to use in the regression
+#' @param ind_df3 is the 3rd dataframe containing the column(s) to use in the regression
+
+#' @param col_to_fill is the name of the column in df_to_fill, with missing data to fill
+#' @param ind_col1 (default, same name as col_to_fill) is the first independent column name from either of ind_df1, ind_df2, ind_df3, to be used to fill gaps in col_to_fill. Regression will be used and one dataframe 
+#will be checked after the other, from the highest to lowest correlation coefficient until all gaps are filled
+#' @param ind_col2 is the second independent column, to be used in case first column is absent, or if multiple regression will be tried (not needed yet)
+
+#datetime column required in all dataframes. rename if necessary,
+
+gapfill_between_sites <- function(datetime="datetime",
+                                  df_to_fill, 
+                                  ind_df1, 
+                                  ind_df2=NULL, 
+                                  ind_df3=NULL, 
+                                  col_to_fill, 
+                                  ind_col1=col_to_fill, 
+                                  ind_col2=NULL)
+{
+  # datetime="datetime"
+  # df_to_fill=stortjarn
+  # ind_df1=halsingfors
+  # ind_df2=halmyran
+  # ind_df3=degero
+  # col_to_fill="Ta"
+  # ind_col1=col_to_fill
+  # ind_col2="Ts"
+  
+  # datetime="datetime"
+  # df_to_fill=halmyran_Ta_PARin_SWin
+  # ind_df1=halsingfors
+  # ind_df2=stortjarn
+  # ind_df3=NULL
+  # col_to_fill="WTD"
+  # ind_col1=col_to_fill
+  # ind_col2="Ts"
+  
+  
+  #let"s make sure first that each datetime column is properly set
+  
+  df_to_fill[,datetime] <- as.POSIXct(df_to_fill[,datetime],tz="UTC")
+  ind_df1[,datetime] <- as.POSIXct(ind_df1[,datetime],tz="UTC")
+  ind_df2[,datetime] <- as.POSIXct(ind_df2[,datetime],tz="UTC")
+  ind_df3[,datetime] <- as.POSIXct(ind_df3[,datetime],tz="UTC")
+  
+  
+  df_to_fill_sub <- df_to_fill[,c(datetime,col_to_fill)] #let's copy the necessary columns
+  
+  ind_cols <- NULL
+  ind_cols <- c(datetime,ind_col1) #getting all columns to select from the independent dataframes
+  if(!is.null(ind_col2)){
+    ind_cols <- c(datetime,ind_col1,ind_col2) #if there is another variable to use when a column is absent, add it to the columns to retrieve from the other dataframes
+  }
+  
+  #Selecing  only the needed columns, and renaming them to be able to merge them all
+  ind_df1_sub <- ind_df1[,intersect(ind_cols,colnames(ind_df1))]
+  colnames(ind_df1_sub) <- c(datetime, paste(intersect(ind_cols,colnames(ind_df1)),1,sep="_")[-1])
+  
+  if(!is.null(ind_df2)){
+    ind_df2_sub <- ind_df2[,intersect(ind_cols,colnames(ind_df2))]
+    colnames(ind_df2_sub) <- c(datetime, paste(intersect(ind_cols,colnames(ind_df2)),2,sep="_")[-1])
+  }
+  if(!is.null(ind_df3)){
+    ind_df3_sub <- ind_df3[,intersect(ind_cols,colnames(ind_df3))]
+    colnames(ind_df3_sub) <- c(datetime, paste(intersect(ind_cols,colnames(ind_df3)),3,sep="_")[-1])
+  }
+  #merging all the dataframes
+  list_to_merge <- list(df_to_fill_sub)
+  if(exists("ind_df1_sub")){
+    list_to_merge <- c(list_to_merge,list(ind_df1_sub))
+  }
+  if(exists("ind_df2_sub")){
+    list_to_merge <- c(list_to_merge,list(ind_df2_sub))
+  }
+  if(exists("ind_df3_sub")){
+    list_to_merge <- c(list_to_merge,list(ind_df3_sub))
+  }
+  # complete_df <- Reduce(function(x,y) merge(x = x, y = y,by=datetime, all.x=TRUE), 
+  #                       list_to_merge)
+  
+  complete_df <- Reduce(function(x,y) merge(x = x, y = y, all=T), 
+                        list_to_merge)
+  
+  complete_df <- unique(complete_df)
+  # complete_df <- reduce(list_to_merge, left_join, by = "datetime")
+  
+  #checking which parameter (which param and which site) correlates best with the one with missing values
+  all_cols_for_filling <- colnames(complete_df)[!colnames(complete_df) %in% c(datetime,col_to_fill)] #gets only the new column names from other sites
+  
+  corr <- sapply(all_cols_for_filling, function(x) 
+    cor(complete_df[,col_to_fill], complete_df[,x], use="complete.obs"))
+  
+  # sorted_corr <- sort(corr,decreasing=T)
+  o <- order(abs(corr), decreasing = TRUE)
+  sorted_corr <- corr[o]
+  
+  print(sorted_corr)
+  
+  complete_df$filled <- complete_df[[col_to_fill]]
+  for(current_best_var in names(sorted_corr)){
+    # current_best_var="Ta_3"
+    # current_best_var <- names(sorted_corr)[sorted_corr == r]
+    print(current_best_var)
+    na_count <- sum(is.na(complete_df$filled))
+    print(na_count)
+    if (na_count > 0) {
+      lm.cf <- lm(reformulate(current_best_var, col_to_fill), complete_df)$coef
+      calculated <- lm.cf[1] + complete_df[[current_best_var]]*lm.cf[2]
+      complete_df$filled[which(is.na(complete_df$filled))] <- calculated[which(is.na(complete_df$filled))]
+      #complete_df$filled <- ifelse(is.na(complete_df[[col_to_fill]]) & is.na(complete_df$filled), lm.cf[1] + complete_df[[current_best_var]]*lm.cf[2], complete_df[[col_to_fill]])
+    }
+  }
+  names(complete_df)[names(complete_df)=="filled"] <- paste(col_to_fill,"_f",sep="")
+  complete_df_filled_only <- complete_df[,setdiff(colnames(complete_df), c(col_to_fill,all_cols_for_filling))]
+  
+  # filled_col_only <- merge(df_to_fill[,c("datetime",col_to_fill)],complete_df_filled_only, all.x=T)
+  
+  df_to_return <- merge(df_to_fill,complete_df_filled_only, all=T)
+  df_to_return <- unique(df_to_return)
+  return(df_to_return)
+  
+}
+
+
+
+########################################################################################
+###########GENERATING ARTIFICIAL MISSING VALUES AND COMPUTING THE GAP LENGTH############
+########################################################################################
+#Function for counting the length of the gaps to be able to generate gaps that don't touch existing big gaps when using the prod_NA_new function.
+#The flow is: name the gap lengths within the prod_na, and prod na within the gap counter function
+
+gap_length_only <- function(data,Flux){
+  # data=fluxes_meteo
+  # Flux="ch4_flux_final"
+  
+  # # define the pipe from the package "magrittr"
+  `%>%` <- magrittr::`%>%`
+  
+  data <- data[order(data$datetime, decreasing = FALSE), ] #making sure the dataset is ordered by datetime
+  rownames(data) <- NULL
+
+  ### add sequence mark to the gaps -------
+  mt <- is.na(data[,Flux])
+  ind <- 1 # index for marking the gaps
+  mk <- vector()
+  for (i in 1:length(mt)) {
+    if (mt[i]==FALSE){
+      mk[i] <- 0 # non-gaps are marked as 0
+    } else {
+      if (mt[i]==TRUE){
+        mk[i] <- ind # gaps are marked as the value of ind
+        if (i != length(mt)){ # to prevent the error when loop reach the end
+          if (mt[i+1]==FALSE) {
+            ind <- ind+1 # when reached the end of a gap, change add 1 to ind
+          }
+        }
+      }
+    }
+  }
+  #print(paste0(max(mk)," gaps are marked")) # display the total number of gaps
+  #View(mk)
+  data$mk <- mk
+  require(dplyr)
+  gap_length_df <- data %>% count(mk)
+  gap_length_df$gap_length_ch4_ori <- NA
+  gap_length_df$gap_length_ch4_ori[which(gap_length_df$n==1)] <- "very short"
+  gap_length_df$gap_length_ch4_ori[which(gap_length_df$n > 1 & gap_length_df$n <= 4*2)] <- "short" #4 hours of gap = 8 measurements of 30min
+  gap_length_df$gap_length_ch4_ori[which(gap_length_df$n > 4*2 & gap_length_df$n <= (24*1.5)*2)] <- "medium" #1.5 days
+  gap_length_df$gap_length_ch4_ori[which(gap_length_df$n > (24*1.5)*2  & gap_length_df$n <= (24*15)*2)] <- "long" #15 full days
+  gap_length_df$gap_length_ch4_ori[which(gap_length_df$n > (24*15)*2)] <- "very long" # >15 full days
+  gap_length_df$gap_length_ch4_ori[which(gap_length_df$mk == 0)] <- "not gap"
+  names(gap_length_df)[which(names(gap_length_df)=="n")] <- "n_30min"
+  data_final <- merge(data,gap_length_df,by="mk")
+  
+  data_final <- data_final[order(data_final$datetime, decreasing = FALSE), ] #making sure the dataset is ordered by datetime
+  rownames(data_final) <- NULL
+  
+  data_final <- data_final[,c(2:ncol(data_final),1)]
+  return(data_final)
+}
+
+#function for producing NA of a certain percentage, distributed randomly
+# prodNA_new <- function(x, prop_NA = 0.1){
+#   #set.seed(123)
+#   # x=fluxes_meteo$ch4_flux_final
+#   pos_current_NA <- which(is.na(x))
+#   # pos_current_NA_extended <- unique(c(pos_current_NA,
+#   #                              pos_current_NA-1,pos_current_NA-2,pos_current_NA-3,pos_current_NA-4,pos_current_NA-5,pos_current_NA-6,pos_current_NA-7,pos_current_NA-8,
+#   #                              pos_current_NA+1,pos_current_NA+2,pos_current_NA+3,pos_current_NA+4,pos_current_NA+5,pos_current_NA+6,pos_current_NA+7,pos_current_NA+8
+#   #                              )) #added
+#   pos_current_NA_extended <- unique(c(pos_current_NA,
+#                                       pos_current_NA-1,
+#                                       pos_current_NA+1
+#   )) #added
+#   
+#   n <- length(x)
+#   # NAloc <- rep(FALSE, n)
+#   NAloc <- sample(setdiff(1:n,pos_current_NA_extended),prop_NA*length(!is.na(x)), replace = T)#added extended
+#   #NAloc[sample(n, floor(n*noNA))] <- TRUE
+#   x[NAloc] <- NA
+#   return(x)
+# }
+
+
+prodNA_new <- function(df,Flux_ori, prop_NA = 0.1){
+  # df=fluxes_meteo
+  # Flux_ori="ch4_flux_final"
+  # Flux_art="ch4_flux_final_art"
+  #set.seed(123)
+  # x=fluxes_meteo$ch4_flux_final
+  
+  '%ni%' <- Negate('%in%')
+  
+  data_gapped <- gap_length_only(data=df,Flux=Flux_ori)#creating a gap length column on original fluxes
+  # data_gapped$gap_length_ch4_ori
+  longer_gap_pos <- which(data_gapped$gap_length_ch4_ori %in% c("medium","long","very long"))
+  shorter_gap_pos <- which(data_gapped$gap_length_ch4_ori %ni% c("not gap","medium","long","very long"))
+  # 
+  # 
+  # pos_current_NA <- which(is.na(x))
+
+  pos_current_NA_extended <- unique(c(shorter_gap_pos,
+                                      longer_gap_pos-1,
+                                      longer_gap_pos+1
+                                      )) #added
+  
+  x <- df[[Flux_ori]]
+  n <- length(x)
+  
+  # NAloc <- rep(FALSE, n)
+  NAloc <- sample(setdiff(1:n,pos_current_NA_extended),prop_NA*length(!is.na(x)), replace = F)#added extended
+  #NAloc[sample(n, floor(n*noNA))] <- TRUE
+  x[NAloc] <- NA
+  return(x)
+}
+#gap counter and gap length calculator
+gap_count_length <- function(data,Flux,prop_NA = 0.1){
+  # data=fluxes_meteo
+  # Flux="ch4_flux_final"
+  
+  # # define the pipe from the package "magrittr"
+  `%>%` <- magrittr::`%>%`
+  
+  data <- data[order(data$datetime, decreasing = FALSE), ] #making sure the dataset is ordered by datetime
+  rownames(data) <- NULL
+  
+  ###Adding artificial gaps
+  Flux_art <- paste(Flux,"_art",sep="") #name of the artificial column with 10% of gaps
+  data[[Flux_art]] <- prodNA_new(df=data,Flux_ori = Flux, prop_NA = prop_NA)
+  #column for marking artificial missing values
+  data$artNA <- 0
+  data$artNA[which(is.na(data[[Flux_art]])& !is.na(data[[Flux]]))] <- 1
+  ### add sequence mark to the gaps -------
+  mt <- is.na(data[,Flux_art])
+  ind <- 1 # index for marking the gaps
+  mk <- vector()
+  for (i in 1:length(mt)) {
+    if (mt[i]==FALSE){
+      mk[i] <- 0 # non-gaps are marked as 0
+    } else {
+      if (mt[i]==TRUE){
+        mk[i] <- ind # gaps are marked as the value of ind
+        if (i != length(mt)){ # to prevent the error when loop reach the end
+          if (mt[i+1]==FALSE) {
+            ind <- ind+1 # when reached the end of a gap, change add 1 to ind
+          }
+        }
+      }
+    }
+  }
+  print(paste0(max(mk)," gaps are marked")) # display the total number of gaps
+  #View(mk)
+  data$mk <- mk
+  require(dplyr)
+  gap_length_df <- data %>% count(mk)
+  gap_length_df$length <- NA
+  gap_length_df$length[which(gap_length_df$n==1)] <- "very short"
+  gap_length_df$length[which(gap_length_df$n > 1 & gap_length_df$n <= 4*2)] <- "short" #4 hours of gap = 8 measurements of 30min
+  gap_length_df$length[which(gap_length_df$n > 4*2 & gap_length_df$n <= (24*1.5)*2)] <- "medium" #1.5 days
+  gap_length_df$length[which(gap_length_df$n > (24*1.5)*2  & gap_length_df$n <= (24*15)*2)] <- "long" #15 full days
+  gap_length_df$length[which(gap_length_df$n > (24*15)*2)] <- "very long" # >15 full days
+  gap_length_df$length[which(gap_length_df$mk == 0)] <- "not gap"
+  names(gap_length_df)[which(names(gap_length_df)=="n")] <- "n_30min"
+  data_final <- merge(data,gap_length_df,by="mk")
+  
+  data_final <- data_final[order(data_final$datetime, decreasing = FALSE), ] #making sure the dataset is ordered by datetime
+  rownames(data_final) <- NULL
+  
+  data_final <- data_final[,c(2:ncol(data_final),1)]
+  return(data_final)
+}
+
+#k_fold creator. Creates k folds...
+kfold_creator <- function(df=fluxes_meteo,datetime="datetime", ch4_flux="ch4_flux_final"){
+  library(caret)
+  # df=fluxes_meteo
+  # datetime="datetime"
+  # ch4_flux="ch4_flux_final"
+  
+  df$fold <- NA
+  df[which(is.na(df[[ch4_flux]])),"fold"] <- 0
+  row_indices <- as.numeric(row.names(df[which(!is.na(df[[ch4_flux]])),]))
+  flds <- createFolds(row_indices, k=10, list = TRUE, returnTrain = FALSE)
+  for(i in 1:10){
+    selected_rows <- row_indices[flds[[i]]]
+    
+    df[selected_rows, "fold"] <- i
+  }
+  
+  return(df)
+}
+########################################################################################
+######################ANN GAPFILLING UP TO n VARIABLES##############################
+########################################################################################
+
+
+
+
+#' Gap-fill using ANN
+#' https://rdrr.io/github/junbinzhao/FluxGapsR/src/R/Gapf_ANN.R?fbclid=IwAR1MOS08DQU7fICc3vToR8TX2OKj7V7-cPOIT3cgP3-Z5IaHgubdecJwGn4
+#'
+#' This function automatically gap-fills the missing data points (marked as "NA") in the flux dataset
+#' using artificial neural networks (ANN) that take up to three variables as inputs. The ANN algorithms are based on
+#' the package `neuralnet`.
+#'
+#' @param data a data frame that includes the flux (with NA indicating the missing data) and independent variables
+#' @param Flux a string indicates the column name for the flux variable to be gap-filled
+#' @param var1 a string indicates the column name for the first variable
+#' @param var2 a string indicates the column name for the second variable, default: NULL
+#' @param var3 a string indicates the column name for the third variable, default: NULL
+#' @param win a number indicates the required sampling window length around each gap (total number in two sides), unit: days (default: 5)
+#' @param interval a number indicates the temporal resolution of the measurements in the dataset, unit: minutes (default: 10)
+#' @param threshold a number specifies the threshold for the partial derivatives of the error function as stopping criteria for the ANN model (default: 1)
+#' @param hidden a vector of integers specifies the number of hidden neurons (vertices) in each layer in the ANN model (default: c(2), i.e. one layer with 2 neurons)
+#' @param fail a string or a number indicates what to do when model fails to converge:
+#' 1. use the mean value in the sampling window to fill the gap ("ave", default), or
+#' 2. use any value assigned here to fill the gap (e.g., 9999, NA, etc.)
+#' @param ... other arguments pass to `neuralnet`
+#' @return A data frame that includes the original data, gap-filled data ("filled")
+#' and a "mark" column that indicates the value in each row of the "filled" is either:
+#' 1. original, 2. gap-filled, or 3. failed to converge
+#' @examples
+#' # read example data
+#' df <- read.csv(file = system.file("extdata", "Soil_resp_example.csv", package = "FluxGapsR"),header = T)
+#' df_filled <- Gapfill_ann(data = df,var1 = "Ts",var2 = "Ta",var3 = "Moist")
+#' # visualize the gapfilled results
+#' plot(df_filled$filled,col="red")
+#' points(df_filled$Flux)
+#' @export
+#' 
+
+#install.packages(setdiff(c("neuralnet","magrittr"), rownames(installed.packages())))  
+Gapfill_ann <- function(meth = "ANN",#or"RF"
+                        data,
+                        Flux = "Flux",
+                        vec_var = c(),
+                        win = 5,
+                        interval = 10,
+                        threshold = 1,
+                        hidden = 2,
+                        hidden_long = 2, #for longer gaps?
+                        fail = "ave",
+                        chosen_act_fct="logistic",
+                        rep=1,
+                        learningrate = NULL,
+                        #RF arguments
+                        mtry=4,
+                        ntrees=1000,
+                        nodesize=2,
+                        maxnodes=NULL,
+                        ...
+){
+  # # define the pipe from the package "magrittr"
+  `%>%` <- magrittr::`%>%`
+  # ### add sequence mark to the gaps -------
+  # mt <- is.na(data[,Flux])
+  # ind <- 1 # index for marking the gaps
+  # mk <- vector()
+  # for (i in 1:length(mt)) {
+  #   if (mt[i]==FALSE){
+  #     mk[i] <- 0 # non-gaps are marked as 0
+  #   } else {
+  #     if (mt[i]==TRUE){
+  #       mk[i] <- ind # gaps are marked as the value of ind
+  #       if (i != length(mt)){ # to prevent the error when loop reach the end
+  #         if (mt[i+1]==FALSE) {
+  #           ind <- ind+1 # when reached the end of a gap, change add 1 to ind
+  #         }
+  #       }
+  #     }
+  #   }
+  # }
+  # print(paste0(max(mk)," gaps are marked")) # display the total number of gaps
+  mk <- data$mk #this has been calculated by a separated function and is available in the data
+  len <- data$length #this is also claculated separately, and gives the length of each gap
+  ### prepare data for gapfilling -----
+  # the sampling window length
+  pt_h <- 60/interval # how many data points per hour
+  winID <- win/2*pt_h*24 # how many data points for the sampling window at EACH side of the gap
+  # create vector to save the predicted gapfilled data
+  gap <- rep(NA,nrow(data))
+  
+  #  writing the formula based on the vector of variables
+  dft <- data[,c(Flux,vec_var)]
+  names(dft) <- c("Flux",vec_var)
+  if(meth=="ANN") dft[vec_var] <- scale(dft[vec_var])
+  formula <- as.formula(paste("Flux~",paste(vec_var,collapse="+")))
+  
+  
+  # a vector for marks of each gap
+  mark <- rep(0,nrow(dft))
+  # a number to record the number of failed regression
+  nf <- 0
+  
+  ### gap filling by the marked index of each gap ----------
+  for (i in 1:max(mk)) {
+    indx <- which(mk==i) # index of the gap
+    len_i <- unique(len[indx])
+    # define the sampling window
+    wind_st <- ifelse(min(indx)-winID>=0,min(indx)-winID,1) # use the beginning of time series if not enough sample points are present
+    wind_ed <- ifelse(max(indx)+winID>nrow(data),nrow(data),max(indx)+winID) # use the end if not enough
+    # extract data to fit the model
+    df_ann <- dft[wind_st:wind_ed,] %>%
+      na.omit(.) # remove data in the gap
+    
+    # ANN model
+    
+    if(meth=="ANN"){
+      set.seed(123)
+      if(len_i %in% c("long","very long")){
+        nn <- try(neuralnet::neuralnet(formula = formula,
+                                       data = df_ann,
+                                       # data = dft[sample(c(1:nrow(dft)),size = 2000),], ## sample a fraction of data for test
+                                       threshold = threshold, # increase the threshold to improve the chance of converge
+                                       stepmax = 1e+07, # increase the max step to improve the chance of converge
+                                       hidden = hidden_long, #
+                                       act.fct = chosen_act_fct,
+                                       rep=rep,
+                                       learningrate = learningrate,
+                                       linear.output = T,...), # regression, not classification
+                  silent = TRUE)
+      } else {
+        nn <- try(neuralnet::neuralnet(formula = formula,
+                                       data = df_ann,
+                                       # data = dft[sample(c(1:nrow(dft)),size = 2000),], ## sample a fraction of data for test
+                                       threshold = threshold, # increase the threshold to improve the chance of converge
+                                       stepmax = 1e+07, # increase the max step to improve the chance of converge
+                                       hidden = hidden, #
+                                       act.fct = chosen_act_fct,
+                                       rep=rep,
+                                       learningrate = learningrate,
+                                       linear.output = T,...), # regression, not classification
+                  silent = TRUE)
+      }
+    }
+    
+    if(meth=="RF"){
+      nn <- randomForest::randomForest(
+        as.formula("Flux ~ ."),
+        data=df_ann,
+
+        ntrees=ntrees,
+        # mtry=mtry,
+        # nodesize=nodesize,
+        # maxnodes=maxnodes,
+        #ntree=500,
+        type="regression"
+      )
+    }
+
+
+    #plot(nn)
+    # predict the gaps
+    if (class(nn)!="try-error"){ # if the fit converged
+      if(meth=="ANN") gap[indx] <- predict(nn,newdata=dft[indx,],rep=rep)# gap[indx] <- predict(nn,newdata=dft[indx,])
+      if(meth=="RF") gap[indx] <- predict(nn,newdata=dft[indx,])
+      mark[indx] <- 1 # filled gap
+      print(paste0("#",i," out of ",max(mk)," gaps: succeed!!")) # for checking progress
+    } else {
+      if (fail == "ave"){ # use average in the sampling window
+        gap[indx] <- mean(dft$Flux[wind_st:wind_ed],na.rm = T)
+        mark[indx] <- 2 # failed to filled gap
+        nf <- nf+1 # add up the failed times
+        print(paste0("#",i," out of ",max(mk)," gaps: Failed...")) # for checking progress
+      } else { # or use the designated value
+        gap[indx] <- fail
+        mark[indx] <- 2 # failed to filled gap
+        nf <- nf+1 # add up the failed times
+        print(paste0("#",i," out of ",max(mk)," gaps: Failed...")) # for checking progress
+      }
+    }
+  } # end of the loop
+  df_new <- data.frame(data,
+                       filled = gap,
+                       tem = dft[,"Flux"],
+                       mark) %>%
+    dplyr::mutate(filled = ifelse(mark==0,tem,filled)) %>%
+    dplyr::select(-tem) # drop the temperory column
+  
+  # print a summary of the gapfilling ------------
+  stat <- table(mk)[-1] # number of data points in each gap
+  # print using "cat" for break into lines
+  cat(paste0("","\n",
+             "##### Summary #####","\n",
+             "","\n",
+             "Total gaps:       ",max(mk),"\n",
+             "< 1 day:          ",sum(stat<pt_h*24),"\n",
+             ">= 1 & < 7 days:  ",sum(stat>=pt_h*24 & stat<pt_h*24*7),"\n",
+             ">= 7 & < 15 days: ",sum(stat>=pt_h*24*7 & stat<pt_h*24*15),"\n",
+             ">= 15 days:       ",sum(stat>=pt_h*24*15),"\n",
+             "Failed gaps:      ",nf
+  ))
+  # return the output data frame
+  return(df_new)
+}
+
+
+
+Gapfill_ann_per_gap_size <- function(data,
+                        Flux = "Flux",
+                        vec_var = c(),
+                        win = 5,
+                        interval = 10,
+                        threshold = 1,
+                        hidden = 2,
+                        fail = "ave",
+                        chosen_act_fct="logistic",
+                        rep=1,
+                        learningrate = NULL,
+                        ...
+){
+  # # define the pipe from the package "magrittr"
+  `%>%` <- magrittr::`%>%`
+  # ### add sequence mark to the gaps -------
+  # mt <- is.na(data[,Flux])
+  # ind <- 1 # index for marking the gaps
+  # mk <- vector()
+  # for (i in 1:length(mt)) {
+  #   if (mt[i]==FALSE){
+  #     mk[i] <- 0 # non-gaps are marked as 0
+  #   } else {
+  #     if (mt[i]==TRUE){
+  #       mk[i] <- ind # gaps are marked as the value of ind
+  #       if (i != length(mt)){ # to prevent the error when loop reach the end
+  #         if (mt[i+1]==FALSE) {
+  #           ind <- ind+1 # when reached the end of a gap, change add 1 to ind
+  #         }
+  #       }
+  #     }
+  #   }
+  # }
+  # print(paste0(max(mk)," gaps are marked")) # display the total number of gaps
+  mk <- data$mk
+  ### prepare data for gapfilling -----
+  # the sampling window length
+  pt_h <- 60/interval # how many data points per hour
+  winID <- win/2*pt_h*24 # how many data points for the sampling window at EACH side of the gap
+  # create vector to save the predicted gapfilled data
+  gap <- rep(NA,nrow(data))
+  
+  #  writing the formula based on the vector of variables
+  dft <- data[,c(Flux,vec_var)]
+  names(dft) <- c("Flux",vec_var)
+  dft[vec_var] <- scale(dft[vec_var])
+  formula <- as.formula(paste("Flux~",paste(vec_var,collapse="+")))
+  
+  
+  # a vector for marks of each gap
+  mark <- rep(0,nrow(dft))
+  # a number to record the number of failed regression
+  nf <- 0
+  
+  ### gap filling by the marked index of each gap ----------
+  # for (i in 1:max(mk)) {
+  #   indx <- which(mk==i) # index of the gap
+  #   # define the sampling window
+  #   wind_st <- ifelse(min(indx)-winID>=0,min(indx)-winID,1) # use the beginning of time series if not enough sample points are present
+  #   wind_ed <- ifelse(max(indx)+winID>nrow(data),nrow(data),max(indx)+winID) # use the end if not enough
+  #   # extract data to fit the model
+  #   df_ann <- dft[wind_st:wind_ed,] %>%
+  #     na.omit(.) # remove data in the gap
+  #   
+  #   # ANN model
+  #   nn <- try(neuralnet::neuralnet(formula = formula,
+  #                                  data = df_ann,
+  #                                  # data = dft[sample(c(1:nrow(dft)),size = 2000),], ## sample a fraction of data for test
+  #                                  threshold = threshold, # increase the threshold to improve the chance of converge
+  #                                  stepmax = 1e+07, # increase the max step to improve the chance of converge
+  #                                  hidden = hidden, #
+  #                                  act.fct = chosen_act_fct,
+  #                                  rep=rep,
+  #                                  learningrate = learningrate,
+  #                                  linear.output = T,...), # regression, not classification
+  #             silent = TRUE)
+  #   #plot(nn)
+  #   # predict the gaps
+  #   if (class(nn)!="try-error"){ # if the fit converged
+  #     gap[indx] <- predict(nn,newdata=dft[indx,],rep=rep)# gap[indx] <- predict(nn,newdata=dft[indx,])
+  #     mark[indx] <- 1 # filled gap
+  #     print(paste0("#",i," out of ",max(mk)," gaps: succeed!!")) # for checking progress
+  #   } else {
+  #     if (fail == "ave"){ # use average in the sampling window
+  #       gap[indx] <- mean(dft$Flux[wind_st:wind_ed],na.rm = T)
+  #       mark[indx] <- 2 # failed to filled gap
+  #       nf <- nf+1 # add up the failed times
+  #       print(paste0("#",i," out of ",max(mk)," gaps: Failed...")) # for checking progress
+  #     } else { # or use the designated value
+  #       gap[indx] <- fail
+  #       mark[indx] <- 2 # failed to filled gap
+  #       nf <- nf+1 # add up the failed times
+  #       print(paste0("#",i," out of ",max(mk)," gaps: Failed...")) # for checking progress
+  #     }
+  #   }
+  # } # end of the loop
+ ######################################################################### 
+  
+  df_ann <- dft%>% # in this first test, let's use the whole dataset
+    na.omit(.) 
+  # ANN model
+  set.seed(123)
+  nn <- try(neuralnet::neuralnet(formula = formula,
+                                 data = df_ann,
+                                 # data = dft[sample(c(1:nrow(dft)),size = 2000),], ## sample a fraction of data for test
+                                 threshold = threshold, # increase the threshold to improve the chance of converge
+                                 stepmax = 1e+07, # increase the max step to improve the chance of converge
+                                 hidden = c(28,28),#hidden, #
+                                 act.fct = softplus,#chosen_act_fct,
+                                 rep=rep,
+                                 learningrate = learningrate,
+                                 linear.output = T), # regression, not classification
+            silent = T)
+  nn$result.matrix["error",]
+  
+  indx <- which(mk!=0) #indices of the gaps
+  # predict the gaps
+  if (class(nn)!="try-error"){ # if the fit converged
+    gap[indx] <- predict(nn,newdata=dft[indx,],rep=rep)# gap[indx] <- predict(nn,newdata=dft[indx,])
+    mark[indx] <- 1 # filled gap
+    #print(paste0("#",i," out of ",max(mk)," gaps: succeed!!")) # for checking progress
+  } else { # or use the designated value
+      gap[indx] <- fail
+      mark[indx] <- 2 # failed to filled gap
+      #nf <- nf+1 # add up the failed times
+      #print(paste0("#",i," out of ",max(mk)," gaps: Failed...")) # for checking progress
+  }
+
+  
+  
+  
+  
+  
+  
+  df_new <- data.frame(data,
+                       filled = gap,
+                       tem = dft[,"Flux"],
+                       mark) %>%
+    dplyr::mutate(filled = ifelse(mark==0,tem,filled)) %>%
+    dplyr::select(-tem) # drop the temperory column
+  
+  # print a summary of the gapfilling ------------
+  # stat <- table(mk)[-1] # number of data points in each gap
+  # print using "cat" for break into lines
+  # cat(paste0("","\n",
+  #            "##### Summary #####","\n",
+  #            "","\n",
+  #            "Total gaps:       ",max(mk),"\n",
+  #            "< 1 day:          ",sum(stat<pt_h*24),"\n",
+  #            ">= 1 & < 7 days:  ",sum(stat>=pt_h*24 & stat<pt_h*24*7),"\n",
+  #            ">= 7 & < 15 days: ",sum(stat>=pt_h*24*7 & stat<pt_h*24*15),"\n",
+  #            ">= 15 days:       ",sum(stat>=pt_h*24*15),"\n",
+  #            "Failed gaps:      ",nf
+  # ))
+  # return the output data frame
+  return(df_new)
+}
+
+############################################################################################
+
+# fuzzy_transformer <- function(data,column,new_fuzzy,start,max,end){
+#   # data=fluxes_meteo
+#   # column="hour"
+#   # new_fuzzy="night"
+#   # start=21
+#   # max=3
+#   # end=9
+#   if(column=="month") high_value <- 12
+#   if(column=="hour") high_value <- 24
+#   data[[new_fuzzy]] <- 0
+#   if(start<end){
+#     data[which(data[[column]]>=start & data[[column]]<=max),new_fuzzy] <- (data[which(data[[column]]>=start & data[[column]]<=max),column]-start)/(max-start)
+#     data[which(data[[column]]>max & data[[column]]<=end),new_fuzzy] <- (end-data[which(data[[column]]>max & data[[column]]<=end),column])/(end-max)
+#   } else if (start < max){
+#     data[which(data[[column]]>=start & data[[column]]<=max),new_fuzzy] <- (data[which(data[[column]]>=start & data[[column]]<=max),column]-start)/(max-start)
+#     data[which(data[[column]]>max & data[[column]]<=high_value),new_fuzzy] <- (high_value+end-data[which(data[[column]]>max & data[[column]]<=high_value),column])/(high_value+end-max)
+#     data[which(data[[column]]<=end),new_fuzzy] <- (end-data[which(data[[column]]<=end),column])/(high_value+end-max)
+#     
+#   } else if(start > max){
+#     data[which(data[[column]]>=start),new_fuzzy] <- (data[which(data[[column]]>=start),column]-start)/(high_value+max-start)
+#     data[which(data[[column]]<=max),new_fuzzy] <- (high_value+data[which(data[[column]]<=max),column]-start)/(high_value+max-start)
+#     data[which(data[[column]]>max & data[[column]]<=end),new_fuzzy] <- (end-data[which(data[[column]]>max & data[[column]]<=end),column])/(end-max)
+#   }
+#   return(data[[new_fuzzy]])
+# }
+# 
+# # plot(autumn~month,data=data)
+# # data$DOY.x
+# # plot(night~hour,data=data[which(data$date.x==as.Date("2020-07-01")),])
+# 
+# fuzzy_variables_calculator <- function(data,datetime="datetime"){
+#   #This code creates fuzzy variables as in Papale & Valentino 2003. It requires the self-made fuzzy-transformer function
+#   data[[datetime]] <- as.POSIXct(data[[datetime]],tz="UTC") #setting correctly datetime to posicxt object
+#   data$month <- as.numeric(format(data[[datetime]],format="%m"))
+#   data$hour <- as.numeric(format(data[[datetime]],format="%H"))
+#   
+#   ##SEASONS
+#   data[["winter"]] <- fuzzy_transformer(data,"month","winter",10,1,4)
+#   data[["spring"]] <- fuzzy_transformer(data,"month","spring",1,4,7)
+#   data[["summer"]] <- fuzzy_transformer(data,"month","summer",4,7,10)
+#   data[["autumn"]] <- fuzzy_transformer(data,"month","autumn",7,10,1)
+#   ##HOURS
+#   data[["morning"]] <- fuzzy_transformer(data,"hour","morning",3,9,15)
+#   data[["afternoon"]] <- fuzzy_transformer(data,"hour","afternoon",9,15,21)
+#   data[["evening"]] <- fuzzy_transformer(data,"hour","evening",15,21,3)
+#   data[["night"]] <- fuzzy_transformer(data,"hour","night",21,3,9)
+#   
+#   return(data)
+# }
+# 
+# 
+
+
+
+##################################################
+
+
+fuzzy_transformer <- function(data,column,new_fuzzy,start,max,end){
+  # data=fluxes_meteo
+  # column="hour"
+  # new_fuzzy="night"
+  # start=21
+  # max=3
+  # end=9
+  if(column %in% c("month","month_plus")) high_value <- 12
+  if(column %in% c("hour","hour_plus")) high_value <- 24
+  data[[new_fuzzy]] <- 0
+  if(start<end){
+    data[which(data[[column]]>=start & data[[column]]<=max),new_fuzzy] <- (data[which(data[[column]]>=start & data[[column]]<=max),column]-start)/(max-start)
+    data[which(data[[column]]>max & data[[column]]<=end),new_fuzzy] <- (end-data[which(data[[column]]>max & data[[column]]<=end),column])/(end-max)
+  } else if (start < max){
+    data[which(data[[column]]>=start & data[[column]]<=max),new_fuzzy] <- (data[which(data[[column]]>=start & data[[column]]<=max),column]-start)/(max-start)
+    data[which(data[[column]]>max & data[[column]]<=high_value),new_fuzzy] <- (high_value+end-data[which(data[[column]]>max & data[[column]]<=high_value),column])/(high_value+end-max)
+    data[which(data[[column]]<=end),new_fuzzy] <- (end-data[which(data[[column]]<=end),column])/(high_value+end-max)
+    
+  } else if(start > max){
+    data[which(data[[column]]>=start),new_fuzzy] <- (data[which(data[[column]]>=start),column]-start)/(high_value+max-start)
+    data[which(data[[column]]<=max),new_fuzzy] <- (high_value+data[which(data[[column]]<=max),column]-start)/(high_value+max-start)
+    data[which(data[[column]]>max & data[[column]]<=end),new_fuzzy] <- (end-data[which(data[[column]]>max & data[[column]]<=end),column])/(end-max)
+  }
+  return(data[[new_fuzzy]])
+}
+
+# plot(autumn~month,data=data)
+# data$DOY.x
+# plot(night~hour,data=data[which(data$date.x==as.Date("2020-07-01")),])
+
+fuzzy_variables_calculator <- function(data,datetime="datetime"){
+  #This code creates fuzzy variables as in Papale & Valentino 2003. It requires the self-made fuzzy-transformer function
+  
+  #This function requires lubridate package
+  data[[datetime]] <- as.POSIXct(data[[datetime]],tz="UTC") #setting correctly datetime to posicxt object
+  data$month <- as.numeric(format(data[[datetime]],format="%m"))
+  
+  data$month_plus <- data$month+1
+  data$month_plus[which(data$month_plus==13)] <- 1
+  data$day <- as.numeric(format(data[[datetime]],format="%d"))
+  data$ndays_in_month <- as.numeric(lubridate::days_in_month(data[[datetime]]))
+  
+  data$hour <- as.numeric(format(data[[datetime]],format="%H"))
+  
+  data$hour_plus <- data$hour+1
+  data$hour_plus[which(data$hour_plus==24)] <- 0
+  data$min <- as.numeric(format(data[[datetime]],format="%M"))
+  nmins_in_hour <- 60
+  
+  ##SEASONS
+  data[["winter_mon"]] <- fuzzy_transformer(data,"month","winter_mon",10,1,4)
+  data[["winter_next"]] <- fuzzy_transformer(data,"month_plus","winter_next",10,1,4)
+  data[["winter"]] <- data[["winter_mon"]]+(data[["winter_next"]]-data[["winter_mon"]])*data$day/data$ndays_in_month
+  
+  data[["spring_mon"]] <- fuzzy_transformer(data,"month","spring_mon",1,4,7)
+  data[["spring_next"]] <- fuzzy_transformer(data,"month_plus","spring_next",1,4,7)
+  data[["spring"]] <- data[["spring_mon"]]+(data[["spring_next"]]-data[["spring_mon"]])*data$day/data$ndays_in_month
+  
+  data[["summer_mon"]] <- fuzzy_transformer(data,"month","summer_mon",4,7,10)
+  data[["summer_next"]] <- fuzzy_transformer(data,"month_plus","summer_next",4,7,10)
+  data[["summer"]] <- data[["summer_mon"]]+(data[["summer_next"]]-data[["summer_mon"]])*data$day/data$ndays_in_month
+  
+  data[["autumn_mon"]] <- fuzzy_transformer(data,"month","autumn_mon",7,10,1)
+  data[["autumn_next"]] <- fuzzy_transformer(data,"month_plus","autumn_next",7,10,1)
+  data[["autumn"]] <- data[["autumn_mon"]]+(data[["autumn_next"]]-data[["autumn_mon"]])*data$day/data$ndays_in_month
+  
+  ##HOURS
+  data[["morning_hou"]] <- fuzzy_transformer(data,"hour","morning_hou",3,9,15)
+  data[["morning_next"]] <- fuzzy_transformer(data,"hour_plus","morning_next",3,9,15)
+  data[["morning"]] <- data[["morning_hou"]]+(data[["morning_next"]]-data[["morning_hou"]])*data$min/nmins_in_hour
+  
+  data[["afternoon_hou"]] <- fuzzy_transformer(data,"hour","afternoon_hou",9,15,21)
+  data[["afternoon_next"]] <- fuzzy_transformer(data,"hour_plus","afternoon_next",9,15,21)
+  data[["afternoon"]] <- data[["afternoon_hou"]]+(data[["afternoon_next"]]-data[["afternoon_hou"]])*data$min/nmins_in_hour 
+  
+  data[["evening_hou"]] <- fuzzy_transformer(data,"hour","evening_hou",15,21,3)
+  data[["evening_next"]] <- fuzzy_transformer(data,"hour_plus","evening_next",15,21,3)
+  data[["evening"]] <- data[["evening_hou"]]+(data[["evening_next"]]-data[["evening_hou"]])*data$min/nmins_in_hour
+  
+  data[["night_hou"]] <- fuzzy_transformer(data,"hour","night_hou",21,3,9)
+  data[["night_next"]] <- fuzzy_transformer(data,"hour_plus","night_next",21,3,9)
+  data[["night"]] <- data[["night_hou"]]+(data[["night_next"]]-data[["night_hou"]])*data$min/nmins_in_hour
+  
+  return(data)
+}
+
+
+
+
+##################
+
+#VPD calculator
+
+VPD_calculator <- function(Ta,RH){
+  es <- 0.61365*exp((Ta*17.502)/(240.97+Ta))
+  VPD = es*(1-RH/100)
+  return(VPD)
+}

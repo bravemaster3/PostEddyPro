@@ -1,0 +1,26 @@
+{
+    "id": "1BCCAFD8",
+    "path": "C:/BRAVE/slu/eddy_covariance/myphd/R_codes/Organized/packages/PostEddyPro/R/temporal_calculators.R",
+    "project_path": "R/temporal_calculators.R",
+    "type": "r_source",
+    "hash": "1159209544",
+    "contents": "",
+    "dirty": false,
+    "created": 1657191790994.0,
+    "source_on_save": false,
+    "relative_order": 12,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "11,36",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1657192270,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1657192270316,
+    "read_only": false,
+    "read_only_alternatives": []
+}

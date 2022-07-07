@@ -1,11 +1,29 @@
 Package: PostEddyPro
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Make EddyPro Output Post-processing Easier and More Efficient
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Koffi Dodji Noumonvi
+Maintainer: Koffi <koffi.noumonvi@slu.se>
+Description: A set of functions to ease the post-processing after raw flux processing in eddypro.
+    This package will come in very handy when having to repeat the same tasks for several sites.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+Imports:
+    ggplot2,
+    plotly,
+    lubridate,
+    data.table,
+    cowplot,
+    graphics,
+    stats,
+    utils,
+    Metrics,
+    caret,
+    randomForest,
+    dplyr,
+    tune
+RoxygenNote: 7.2.0
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
