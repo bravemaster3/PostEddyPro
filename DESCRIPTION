@@ -22,7 +22,9 @@ Imports:
     caret,
     randomForest,
     dplyr,
-    tune
+    tune,
+    rlang,
+    magrittr
 RoxygenNote: 7.2.0
 Suggests: 
     testthat (>= 3.0.0)

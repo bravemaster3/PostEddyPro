@@ -9,7 +9,7 @@ rf_gapfiller(
   datetime = "datetime",
   flux_col = "ch4_flux_final",
   preds,
-  max_mtry = ceiling(max(sqrt(length(preds)), length(preds)/3)),
+  max_mtry = NULL,
   sitename
 )
 }

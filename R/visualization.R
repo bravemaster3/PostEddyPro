@@ -23,6 +23,17 @@ visualization <- function(path_EC,
   meteo_site$datetime <- as.POSIXct(meteo_site$datetime, format="%Y-%m-%d %H:%M:%S", tz="UTC")
   fluxes_meteo <- merge(fluxes_site, meteo_site, by="datetime", all=TRUE)
 
+  #correcting some columnn names that changed because they were the same in met and EC
+
+  nams <-  colnames(fluxes_meteo)
+  EC_cols <- nams[grepl(".x", nams,fixed = TRUE)]
+  met_cols <- nams[grepl(".y", nams, fixed = TRUE)]
+  new_EC_cols <- gsub(".x", "_EC", EC_cols, fixed=TRUE)
+  new_met_cols <- gsub(".y", "", met_cols, fixed=TRUE)
+
+  names(fluxes_meteo)[which(names(fluxes_meteo) %in% EC_cols)] <- new_EC_cols
+  names(fluxes_meteo)[which(names(fluxes_meteo) %in% met_cols)] <- new_met_cols
+
   #ploting
 
   co2 <- ggplot2::ggplot(data=fluxes_meteo, ggplot2::aes_string(x="datetime", y="co2_flux"))+

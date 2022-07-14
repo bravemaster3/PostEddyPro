@@ -18,5 +18,6 @@ a dataframe to which the sine, cosine and delta (decimal timestamp from beginnin
 Caculates and appends sine, cosine and time delta to a dataframe
 }
 \examples{
-temporal_calculators(data.frame(datetime=as.POSIXct(c("2020-01-01 00:30:00", "2020-01-01 01:00:00", "2020-01-01 01:30:00", "2020-01-01 02:00:00"))))
+temporal_calculators(data.frame(datetime=as.POSIXct(c("2020-01-01 00:30:00",
+"2020-01-01 01:00:00", "2020-01-01 01:30:00", "2020-01-01 02:00:00"))))
 }

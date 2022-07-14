@@ -7,7 +7,8 @@
 #' @export
 #'
 #' @examples
-#' temporal_calculators(data.frame(datetime=as.POSIXct(c("2020-01-01 00:30:00", "2020-01-01 01:00:00", "2020-01-01 01:30:00", "2020-01-01 02:00:00"))))
+#' temporal_calculators(data.frame(datetime=as.POSIXct(c("2020-01-01 00:30:00",
+#' "2020-01-01 01:00:00", "2020-01-01 01:30:00", "2020-01-01 02:00:00"))))
 temporal_calculators <- function(df, datetime="datetime"){
   df$doy <- lubridate::yday(df[[datetime]])
   df$yearly_sin <- sin(2 * pi * (df$doy - 1) / 365)

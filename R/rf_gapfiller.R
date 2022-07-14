@@ -14,10 +14,12 @@ rf_gapfiller <- function(site_df, #The dataframe containing all the flux data an
                          datetime="datetime", #the name of the date & time column! Though I use the same for all sites, setting it as an argument will allow to use the function easily with datasets with different names!
                          flux_col="ch4_flux_final", #The name of the flux column to gapfill
                          preds, #a vector of predictor variables, with default the previous vector created
-                         max_mtry = ceiling(max(sqrt(length(preds)), length(preds)/3)), #This is for trying values of mtry up to the max of either
+                         max_mtry = NULL, #This is for trying values of mtry up to the max of either. It is calculated based on the length of preds
                          #sqrt of the number of predictors, or the 1/3rd of the number of predictors
                          sitename #This variable is simply for annotating the plots with the site name.
 ){
+
+  max_mtry <- ceiling(max(sqrt(length(preds)), length(preds)/3)) #calculates maxtry knowing the length of preds
 
   site_df <- PostEddyPro::temporal_calculators(site_df,datetime = datetime)
 
@@ -60,7 +62,7 @@ rf_gapfiller <- function(site_df, #The dataframe containing all the flux data an
   for (fold in unique(df$folds)){
 
     #Let's train the random forest on all BUT the current fold
-    rf <- randomForest(
+    rf <- randomForest::randomForest(
       stats::as.formula(formula), #this is the same formula as before (when I used caret for the tuning of mtry hyperparameter)
       data=df %>% dplyr::filter(folds!=fold), #Since this is the training, I exclude the current fold
       mtry=m$bestTune$mtry, #this is the best tuning during the caret crossvalidation
@@ -118,20 +120,20 @@ rf_gapfiller <- function(site_df, #The dataframe containing all the flux data an
   ######
   #Let's make some plots
 
-  output_list$pred_meas <- ggplot2::ggplot(data=df, aes_string(x=flux_col,y="ch4_predicted"))+
+  output_list$pred_meas <- ggplot2::ggplot(data=df, ggplot2::aes_string(x=flux_col,y="ch4_predicted"))+
     ggplot2::geom_point(size=0.3)+
     ggplot2::theme_bw()+
     ggplot2::geom_abline(slope=1,intercept = 0, color="red")+
     ggplot2::xlab("Obs. CH4 (mg.m-2.30min-1)")+
     ggplot2::ylab("Pred. CH4 (mg.m-2.30min-1)")+
-    ggplot2::annotate(geom="text", label=paste(sitename,", ", "r²=", round(r_sq,2), "\n", "rmse=",round(rmse,5), sep=""),
+    ggplot2::annotate(geom="text", label=paste(sitename,", ", "r_sq=", round(r_sq,2), "\n", "rmse=",round(rmse,5), sep=""),
              x=-Inf,y=Inf, hjust = 0, vjust = 1, color="red") +
-    ggplot2::theme(panel.border = element_rect(fill=NA,colour="black",size=1.5)) +
+    ggplot2::theme(panel.border = ggplot2::element_rect(fill=NA,colour="black",size=1.5)) +
     tune::coord_obs_pred()
 
 
 
-  output_list$gf_meas_time <- ggplot2::ggplot(data=output_list$site_df, aes_string(x=datetime,y="ch4_flux_final_filled",color="quality"))+
+  output_list$gf_meas_time <- ggplot2::ggplot(data=output_list$site_df, ggplot2::aes_string(x=datetime,y="ch4_flux_final_filled",color="quality"))+
     ggplot2::geom_point(size=0.3)+
     ggplot2::theme_classic()+
     ggplot2::scale_color_manual(values=c("red", "black"))+
