@@ -22,7 +22,7 @@ rf_gapfiller(
 
 \item{preds}{vector of predictors that have been gapfilled in advance}
 
-\item{max_mtry}{maximum mtry parameter to be used in the random forest. it is calculated here as the maximum of sqrt of the number of predictors, and the 1/3rd of the number of predictors}
+\item{max_mtry}{an integer, representing the maximum mtry parameter to be used in the random forest. it is calculated here as the maximum of sqrt of the number of predictors, and the 1/3rd of the number of predictors}
 
 \item{sitename}{sitename just for labelling the plots}
 }
