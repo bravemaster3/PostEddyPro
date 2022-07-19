@@ -1,0 +1,74 @@
+library(ggplot2)
+library(dplyr)
+library(plotly)
+halsingfors_unconverted <- read.table("D:/EC/Data_organized/Halsingfors/To_delete/Halsingfors_period2_2022-04-25_QC_meteo_CH4_GF3.csv", sep=",", header = T)
+
+halsingfors <- halsingfors_unconverted %>%
+  mutate(ch4_flux_final=PostEddyPro::umolCH4m2s_to_mgCH4m2_30min(ch4_flux_final))
+
+halsingfors$datetime <- as.POSIXct(halsingfors$datetime, format="%Y-%m-%d %H:%M",tz="UTC")
+halsingfors$date <-as.Date(halsingfors$datetime)
+
+
+hals_sel <- halsingfors[,c("datetime","ch4_flux_final")] %>%
+  dplyr::rename(FCH4_old=ch4_flux_final)
+
+
+
+gapfilling_list_hals <- readRDS("D:/EC/Data_organized/Halsingfors/FINAL/gf_rds.RDS")
+
+hals_sel_new <- gapfilling_list_hals$site_df[,c("datetime","ch4_flux_final")] %>%
+  dplyr::mutate(ch4_flux_final=PostEddyPro::umolCH4m2s_to_mgCH4m2_30min(ch4_flux_final)) %>%
+  dplyr::rename(FCH4_new=ch4_flux_final)
+
+
+hals_sel_merged <- merge(hals_sel, hals_sel_new, all=TRUE)
+
+
+plot(FCH4_new~FCH4_old, data=hals_sel_merged)
+
+
+ggplotly(ggplot(hals_sel_merged, aes(x=FCH4_old,y=FCH4_new, label=datetime))+
+           geom_point(cex=0.3)+
+           xlim(c(-1,10))+
+           ylim(c(-1,10))+
+           theme_bw())
+
+
+######################
+#filled
+
+halsingfors_unconverted <- read.table("D:/EC/Data_organized/Halsingfors/To_delete/Halsingfors_period2_2022-04-25_QC_meteo_CH4_GF3.csv", sep=",", header = T)
+
+halsingfors <- halsingfors_unconverted %>%
+  mutate(ch4_flux_final_filled=PostEddyPro::umolCH4m2s_to_mgCH4m2_30min(ch4_flux_final_filled))
+
+halsingfors$datetime <- as.POSIXct(halsingfors$datetime, format="%Y-%m-%d %H:%M",tz="UTC")
+halsingfors$date <-as.Date(halsingfors$datetime)
+
+
+hals_sel <- halsingfors[,c("datetime","ch4_flux_final_filled")] %>%
+  dplyr::rename(FCH4_old=ch4_flux_final_filled)
+
+
+
+gapfilling_list_hals <- readRDS("D:/EC/Data_organized/Halsingfors/FINAL/gf_rds.RDS")
+
+hals_sel_new <- gapfilling_list_hals$site_df[,c("datetime","ch4_flux_final_filled")] %>%
+  dplyr::mutate(ch4_flux_final_filled=PostEddyPro::umolCH4m2s_to_mgCH4m2_30min(ch4_flux_final_filled)) %>%
+  dplyr::rename(FCH4_new=ch4_flux_final_filled)
+
+
+hals_sel_merged <- merge(hals_sel, hals_sel_new, all=TRUE)
+
+
+plot(FCH4_new~FCH4_old, data=hals_sel_merged)
+
+
+ggplotly(ggplot(hals_sel_merged, aes(x=FCH4_old,y=FCH4_new, label=datetime))+
+           geom_point(cex=0.3)+
+           xlim(c(-1,10))+
+           ylim(c(-1,10))+
+           theme_bw())
+
+

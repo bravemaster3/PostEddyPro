@@ -30,7 +30,7 @@ montecarlo_sim(
 \item{saving_folder}{folder where the simulations will be saved}
 }
 \value{
-this function will return nothing, but files should be saved in a specified folder
+a dataframe containing weekly sigma of residuals and corresponding mean fluxes used for finding the relationship between residuals sigma and flux mean.
 }
 \description{
 Generating n tables with each having a random laplacian noise added to the original fluxes, so called montecarlo simulation

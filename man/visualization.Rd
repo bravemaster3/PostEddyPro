@@ -4,12 +4,28 @@
 \alias{visualization}
 \title{Merge Eddypro and Biomet and Visualize fluxes}
 \usage{
-visualization(path_EC, path_biomet, date_format = "\%Y-\%m-\%d")
+visualization(
+  check_path_EC = TRUE,
+  check_path_biomet = TRUE,
+  path_EC = NULL,
+  path_biomet = NULL,
+  EC_df = NULL,
+  biomet_df = NULL,
+  date_format = "\%Y-\%m-\%d"
+)
 }
 \arguments{
-\item{path_EC}{The path to your untouched Eddypro full output}
+\item{check_path_EC}{logical, TRUE means you provide a path, FALSE means you provide a dataframe for Eddypro output instead. This is practical when merging beforehand several eddypro output and therefore no longer having several header lines}
 
-\item{path_biomet}{The path to your merged biomet file}
+\item{check_path_biomet}{logical, TRUE means you provide a path, FALSE means you provide a dataframe for biomet variables. This is practical for integrating this function within another workflow and not having to save to disk to read it again.}
+
+\item{path_EC}{path to your untouched Eddypro full output}
+
+\item{path_biomet}{path to your merged biomet file. If you used Eddypro to produce the merged biomet file, it will not work here because there are 2 header lines. In this case, you can set check_path_biomet to FALSE and use the variable biomet_df instead (i.e. read the df separately and use it as input here)}
+
+\item{EC_df}{Eddypro output already read in as a dataframe.This is required when check_path_EC is set to FALSE}
+
+\item{biomet_df}{biomet data read in as a dataframe.This is required when check_path_biomet is set to FALSE}
 
 \item{date_format}{If the eddypro output has not been altered, the date format is "\%Y-\%m-\%d", the default. If it has been opened in excel for instance, the date format is likely "\%d/\%m/\%Y"}
 }

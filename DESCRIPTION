@@ -23,7 +23,9 @@ Imports:
     dplyr,
     tune,
     rlang,
-    magrittr
+    magrittr,
+    readr,
+    lazyeval
 RoxygenNote: 7.2.0
 Suggests: 
     testthat (>= 3.0.0)
