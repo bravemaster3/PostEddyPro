@@ -26,7 +26,7 @@ merge_montecarlo_sims <- function(dir,
 
   df_monte_carlo <- NULL
   df_monte_carlo <- Reduce(function(x,y) {merge(x, y, all = TRUE)}, datalist)
-  df_mc_ordered  <- df_monte_carlo[order(df_monte_carlo[,datetime], df_monte_carlo$iteration), ]
+  df_mc_ordered  <- df_monte_carlo[order(df_monte_carlo[,datetime1], df_monte_carlo$iteration), ]
 
   data.table::fwrite(df_mc_ordered, file.path(saving_dir,"monte_carlo_all.csv"), dateTimeAs = "write.csv")
   return(df_mc_ordered)
