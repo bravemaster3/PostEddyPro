@@ -1,0 +1,41 @@
+library(data.table)
+library(jmuOutlier)
+
+headers <- scan("C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output/Halsingfors_ReddyProc_GF.txt", what = character(), nlines = 1, sep="\t")
+units <- scan("C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output/Halsingfors_ReddyProc_GF.txt", what = character(), nlines = 1, skip=1,sep="\t")
+
+hals_df <- read.table("C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output/Halsingfors_ReddyProc_GF.txt", header=FALSE,skip=2,sep="\t")
+
+colnames(hals_df) <- headers
+
+# hals_df$datetime <- as.POSIXct(paste(hals_df$date,hals_df$time), format="%Y-%m-%d %H:%M",tz="UTC")
+
+hals_df[hals_df== -9999] <- NA
+
+
+hals_df$residuals <- hals_df$NEE_fall - hals_df$NEE_orig
+
+
+mean <- mean(hals_df$residuals,na.rm=TRUE)
+median <- median(hals_df$residuals,na.rm=TRUE)
+sigma <- mean(abs(hals_df$residuals-median), na.rm=TRUE) #https://stats.stackexchange.com/questions/281682/how-to-fit-a-data-against-a-laplace-double-exponential-distribution-and-check?fbclid=IwAR19u5jiNeW4KvokCBToA4_io2tJXbihm0BLP4gYgDvIdc0HnVFuNyw9Mhc
+sigma2 <- sd(hals_df$residuals, na.rm=TRUE)
+
+hist(hals_df$residuals, breaks = 100, freq = F)
+curve(dlaplace(x, mean=0,sd=sigma*sqrt(2)), col = "red", add = TRUE)
+
+# hist(hals_df$residuals, breaks = 100, freq = F)
+# curve(dlaplace(x, mean=0,sd=sigma2), col = "red", add = TRUE)
+
+laplace <- function(x,m=0,t=1) exp(-abs(x-m)/t )/2/t #F
+
+
+hist(hals_df$residuals, breaks = 100, freq = F)
+
+curve(laplace(x,m=0,t=sigma), col = "red", add = TRUE)
+
+
+#SIGMA IS THE ONE WE WILL USE IN MATLAB. The mean is 0
+sigma*sqrt(2) #0.3869563 (sigma*sqrt(2) and not the what I called here sigma itself is the estimator of the standard deviation)
+#In fact, the variance of a laplace distribution is 2*t² in the personalized function laplace defined above
+

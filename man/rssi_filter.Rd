@@ -4,10 +4,12 @@
 \alias{rssi_filter}
 \title{Filters for low residual signal strength indicator aka RSSI}
 \usage{
-rssi_filter(fluxes_meteo, RSSI_col)
+rssi_filter(fluxes_meteo, gas, RSSI_col)
 }
 \arguments{
 \item{fluxes_meteo}{dataframe containing both fluxes and soil/air temperature data}
+
+\item{gas}{gas name as denoted in Eddypro (e.g. "ch4" or "co2",includes also non gas like LE)}
 
 \item{RSSI_col}{name of the column containing RSSI values}
 }

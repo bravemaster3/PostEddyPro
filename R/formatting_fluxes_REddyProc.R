@@ -1,0 +1,88 @@
+#' Preparation of flux data for REddyProc gapfilling
+#'
+#' @param df Dataframe containing the flux column, timestamp and all the biomet variables.
+#' If following the standard workflow, use the output from the quality check
+#' @param datetime timestamp column name already as a POSIXct object
+#' @param flux_col flux column, already quality checked/controlled
+#' @param FLUX flux column in the final output: NEE for CO2 flux OR H2O for water flux
+#' @param rg_col global radiation column name or other variable used in its place (e.g. SWin)
+#' @param tair_col air temperature column name
+#' @param tsoil_col soil temperature column name
+#' @param rh_col relative humidity column name
+#' @param vpd_col vapor pressure deficit column name
+#' @param ustar_col u* column name
+#' @param saving_path saving path where the formatted file will be saved
+#'
+#' @return No value returned, but a file saved to disk
+#' @export
+formatting_fluxes_REddyProc <- function(df,
+                                        datetime="datetime",
+                                        flux_col="co2_flux_final",
+                                        FLUX = c("NEE","H2O"),#either of them
+                                        rg_col = "SWin_f",
+                                        tair_col = "Ta_f",
+                                        tsoil_col = "Ts_f",
+                                        rh_col = "RH_f",
+                                        vpd_col = "VPD_f",#VPD must be in kpa
+                                        ustar_col = "u_star",
+                                        saving_path){
+  df$Year <- lubridate::year(df[,datetime])
+  df$DoY <- lubridate::yday(df[,datetime])
+  df$Hour <- lubridate::hour(df[,datetime]) + lubridate::minute(df[,datetime])/60
+
+  if(grep("co2",tolower(flux_col), fixed=TRUE)==1) df$NEE <- df[,flux_col]
+  if(grep("h2o",tolower(flux_col), fixed=TRUE)==1) df$H2O <- df[,flux_col]
+
+  df$Rg <- df[,rg_col]
+  df$Tair <- df[,tair_col]
+  df$Tsoil <- df[,tsoil_col]
+  df$rH <- df[,rh_col]
+  df$VPD <- df[,vpd_col]*10 #to convert it to hPa from kPa
+  df$Ustar <- df[,ustar_col]
+
+  ####
+
+  df_ReddyProc <- df[,c("Year","DoY","Hour",FLUX,"LE","H","Rg","Tair","Tsoil","rH","VPD","Ustar")]
+  df_ReddyProc[is.na(df_ReddyProc)] <- -9999
+
+  headers <- colnames(df_ReddyProc)
+  if(grep("co2",tolower(flux_col), fixed=TRUE)==1) unit_flux <- "umolm-2s-1"
+  if(grep("h2o",tolower(flux_col), fixed=TRUE)==1) unit_flux <- "mmolm-2s-1"
+
+
+  units <- c("-", "-", "-",	unit_flux,	"Wm-2",	"Wm-2",	"Wm-2",	"degC",	"degC",	"%", "hPa",	"ms-1")
+
+  saving_file_name <- file.path(saving_path,  paste0("For_ReddyProc_", FLUX, ".txt"))
+
+
+  #Creating the directory or removing it if it was already there.
+  if(file.exists(saving_file_name)) {
+    deletion <- utils::menu(c("Yes, remove it!","No"), graphics = TRUE, title="A file with the same name exists. Delete to continue...")
+
+
+    file_check = FALSE
+    if(deletion==1) {
+      unlink(saving_file_name)
+      print("The existing file has been removed")
+      print("The new file will be created")
+      file_check = TRUE
+    }
+
+    else {
+      print("File writing will be aborted")
+      file_check = FALSE
+    }
+  } else file_check = TRUE
+
+
+  if(file_check == TRUE) {
+    sink(saving_file_name)
+    cat(cat(headers,sep="\t"),cat("\n"),cat(units, sep="\t"), sep = "\n")
+    sink()
+    data.table::fwrite(df_ReddyProc, file = saving_file_name, sep="\t", append = TRUE, col.names = FALSE)
+  }
+
+
+
+
+}
