@@ -1,0 +1,409 @@
+library(PostEddyPro)
+library(ggplot2)
+library(plotly)
+library(caret)
+library(RANN)
+library(data.table)
+
+###############################
+#############Halmyran
+###############################
+
+#First visualization
+vis_list_halm <- visualization(path_EC = "D:/EC/Data_organized/Halmyran/Eddypro/Output_final/eddypro_Halmyran_2022_07_07_full_output_2022-07-08T120131_adv.csv",
+              path_biomet = "D:/EC/Data_organized/Halmyran/Biomet_gf/halm_met.csv")
+
+fluxes_meteo_halm <- vis_list_halm$data
+vis_list_halm$graphs
+
+#Quality control
+fluxes_meteo_halm_qc <- quality_control(fluxes_meteo_halm, Temp_col = "Ts")
+
+# Additional hard flag visual...
+fluxes_meteo_halm_qc$ch4_flux_final[which(fluxes_meteo_halm_qc$ch4_flux_final >= 0.4)] <- NA
+
+# fluxes_meteo_halm_qc
+
+gapfilling_list_halm <- rf_gapfiller(site_df=fluxes_meteo_halm_qc,
+                                    datetime="datetime",
+                                    flux_col="ch4_flux_final",
+                                    preds=c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"),
+                                    max_mtry = NULL, #This is for trying values of mtry up to the max of either
+                                    #sqrt of the number of predictors, or the 1/3rd of the number of predictors
+                                    sitename="Halmyran" #This variable is simply for annotating the plots with the site name.
+)
+
+saveRDS(gapfilling_list_halm, "D:/EC/Data_organized/Halmyran/FINAL/gf_rds.RDS")
+
+gapfilling_list_halm <- readRDS("D:/EC/Data_organized/Halmyran/FINAL/gf_rds.RDS")
+
+
+gapfilling_list_halm$pred_meas
+
+gapfilling_list_halm$gf_meas_time
+
+#Montecarlo simulation
+#Is it the list that I am returning that creates the warning??? For sure it didn't display that list... Maybe because it has to be displayed too many times
+mc_sim_halm_list <- montecarlo_sim(df_gf = gapfilling_list_halm$site_df, #the gapfilled flux dataframe. This would be retrieved for instance from the rf_gapfiller function
+                                  flux_col="ch4_flux_final",
+                                  flux_pred_col="predicted", #including all predictions also for the measured data
+                                  datetime = "datetime",
+                                  preds = c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"), #same as used for gapfilling ("Ta_f","Ts_f","WTD_smooth","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta")
+                                  n = 100,
+                                  saving_folder = "D:/EC/Data_organized/Halmyran/FINAL/Montecarlo"
+)
+
+mc_sim_halm_list
+
+#Gapfilling montecarlo
+montecarlo_sim_gf(mc_sim_path = "D:/EC/Data_organized/Halmyran/FINAL/Montecarlo",
+                  mtry = gapfilling_list_halm$tuningmodel$bestTune$mtry, #this is the best tuning during the caret crossvalidation, should be fetched from the saved RF gapfilling model prior to using this function
+                  preds = c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"), #same as used in the original gapfilling
+                  flux_col = "ch4_flux_final",
+                  mc_sim_gf_path = "D:/EC/Data_organized/Halmyran/FINAL/Montecarlo_gf")
+
+#Merging gapfilled montecarlo
+df_mc <- merge_montecarlo_sims(dir = "D:/EC/Data_organized/Halmyran/FINAL/Montecarlo_gf",
+                               saving_dir = "D:/EC/Data_organized/Halmyran/FINAL/Montecarlo_gf_merged")
+
+df_mc <- fread("D:/EC/Data_organized/Halmyran/FINAL/Montecarlo_gf_merged/monte_carlo_all.csv")
+
+#Preparing random measurement error
+
+preds <- c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta")
+halm_err_df <- gapfilling_list_halm$site_df[,c("datetime","rand_err_ch4_flux","ch4_flux_final_filled", "quality", preds)]
+
+halm_err_df$rand_err_ch4_flux[which(halm_err_df$quality == "gapfilled")] <- NA
+halm_err_df$quality <- NULL
+preProcValues <- preProcess(halm_err_df, method = c("bagImpute"))
+halm_err_df_imp <- predict(preProcValues, halm_err_df)
+
+plot(rand_err_ch4_flux~datetime, data=halm_err_df_imp)
+
+halm_aggr_fluxes <- ch4_flux_aggregator(flux_df = gapfilling_list_halm$site_df,
+                                       df_mc = df_mc,
+                                       rd_err_df = halm_err_df_imp)
+
+saveRDS(halm_aggr_fluxes, "D:/EC/Data_organized/Halmyran/FINAL/aggr_rds.RDS")
+
+
+###############################
+#############Degero
+###############################
+
+#First visualization
+vis_list_deg <- visualization(path_EC = "D:/EC/Data_organized/Degero/Eddypro/Output/eddypro_Deg_LGR_2022_07_07_full_output_2022-07-09T213920_adv.csv",
+                          path_biomet = "D:/EC/Data_organized/Degero/Biomet_gf/deg_met.csv")
+
+fluxes_meteo_deg <- vis_list_deg$data
+vis_list_deg$graphs
+
+#Quality control
+fluxes_meteo_deg_qc <- quality_control(fluxes_meteo_deg, Temp_col = "Ts")
+
+# Additional hard flag visual...
+fluxes_meteo_deg_qc$ch4_flux_final[which(fluxes_meteo_deg_qc$ch4_flux_final >= 0.45)] <- NA
+
+# fluxes_meteo_deg_qc
+
+gapfilling_list_deg <- rf_gapfiller(site_df=fluxes_meteo_deg_qc,
+                                datetime="datetime",
+                                flux_col="ch4_flux_final",
+                                preds=c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"),
+                                max_mtry = NULL, #This is for trying values of mtry up to the max of either
+                                #sqrt of the number of predictors, or the 1/3rd of the number of predictors
+                                sitename="Degero" #This variable is simply for annotating the plots with the site name.
+)
+
+saveRDS(gapfilling_list_deg, "D:/EC/Data_organized/Degero/FINAL/gf_rds.RDS")
+
+gapfilling_list_deg <- readRDS("D:/EC/Data_organized/Degero/FINAL/gf_rds.RDS")
+
+
+gapfilling_list_deg$pred_meas
+
+gapfilling_list_deg$gf_meas_time
+
+#Montecarlo simulation
+#Is it the list that I am returning that creates the warning??? For sure it didn't display that list... Maybe because it has to be displayed too many times
+mc_sim_deg_list <- montecarlo_sim(df_gf = gapfilling_list_deg$site_df, #the gapfilled flux dataframe. This would be retrieved for instance from the rf_gapfiller function
+                                  flux_col="ch4_flux_final",
+                                  flux_pred_col="predicted", #including all predictions also for the measured data
+                                  datetime = "datetime",
+                                  preds = c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"), #same as used for gapfilling ("Ta_f","Ts_f","WTD_smooth","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta")
+                                  n = 100,
+                                  saving_folder = "D:/EC/Data_organized/Degero/FINAL/Montecarlo"
+)
+
+mc_sim_deg_list
+
+#Gapfilling montecarlo
+montecarlo_sim_gf(mc_sim_path = "D:/EC/Data_organized/Degero/FINAL/Montecarlo",
+                  mtry = gapfilling_list_deg$tuningmodel$bestTune$mtry, #this is the best tuning during the caret crossvalidation, should be fetched from the saved RF gapfilling model prior to using this function
+                  preds = c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"), #same as used in the original gapfilling
+                  flux_col = "ch4_flux_final",
+                  mc_sim_gf_path = "D:/EC/Data_organized/Degero/FINAL/Montecarlo_gf")
+
+#Merging gapfilled montecarlo
+df_mc <- merge_montecarlo_sims(dir = "D:/EC/Data_organized/Degero/FINAL/Montecarlo_gf",
+                               saving_dir = "D:/EC/Data_organized/Degero/FINAL/Montecarlo_gf_merged")
+
+df_mc <- fread("D:/EC/Data_organized/Degero/FINAL/Montecarlo_gf_merged/monte_carlo_all.csv")
+
+#Preparing random measurement error
+
+preds <- c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta")
+deg_err_df <- gapfilling_list_deg$site_df[,c("datetime","rand_err_ch4_flux","ch4_flux_final_filled", "quality", preds)]
+
+deg_err_df$rand_err_ch4_flux[which(deg_err_df$quality == "gapfilled")] <- NA
+deg_err_df$quality <- NULL
+preProcValues <- preProcess(deg_err_df, method = c("bagImpute"))
+deg_err_df_imp <- predict(preProcValues, deg_err_df)
+
+plot(rand_err_ch4_flux~datetime, data=deg_err_df_imp)
+
+deg_aggr_fluxes <- ch4_flux_aggregator(flux_df = gapfilling_list_deg$site_df,
+                                        df_mc = df_mc,
+                                        rd_err_df = deg_err_df_imp)
+
+saveRDS(deg_aggr_fluxes, "D:/EC/Data_organized/Degero/FINAL/aggr_rds.RDS")
+
+
+
+
+
+
+
+
+
+
+
+
+###############################
+#############Stortjarn
+###############################
+
+
+#First visualization
+vis_list_sto <- visualization(path_EC = "D:/EC/Data_organized/Stortjarn/Eddypro/output/eddypro_Stortjarn_20220612_full_output_2022-07-08T130122_adv.csv",
+                              path_biomet = "D:/EC/Data_organized/Stortjarn/Biomet_gf/sto_met.csv")
+
+fluxes_meteo_sto <- vis_list_sto$data
+vis_list_sto$graphs
+
+#Quality control
+fluxes_meteo_sto_qc <- quality_control(fluxes_meteo_sto, Temp_col = "Ts")
+
+# Additional hard flag visual...
+fluxes_meteo_sto_qc$ch4_flux_final[which(fluxes_meteo_sto_qc$ch4_flux_final >= 0.18)] <- NA
+
+# fluxes_meteo_sto_qc
+
+gapfilling_list_sto <- rf_gapfiller(site_df=fluxes_meteo_sto_qc,
+                                    datetime="datetime",
+                                    flux_col="ch4_flux_final",
+                                    preds=c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"),
+                                    max_mtry = NULL, #This is for trying values of mtry up to the max of either
+                                    #sqrt of the number of predictors, or the 1/3rd of the number of predictors
+                                    sitename="Stortjarn" #This variable is simply for annotating the plots with the site name.
+)
+
+saveRDS(gapfilling_list_sto, "D:/EC/Data_organized/Stortjarn/FINAL/gf_rds.RDS")
+
+gapfilling_list_sto <- readRDS("D:/EC/Data_organized/Stortjarn/FINAL/gf_rds.RDS")
+
+
+gapfilling_list_sto$pred_meas
+
+gapfilling_list_sto$gf_meas_time
+
+#Montecarlo simulation
+#Is it the list that I am returning that creates the warning??? For sure it didn't display that list... Maybe because it has to be displayed too many times
+mc_sim_sto_list <- montecarlo_sim(df_gf = gapfilling_list_sto$site_df, #the gapfilled flux dataframe. This would be retrieved for instance from the rf_gapfiller function
+                                  flux_col="ch4_flux_final",
+                                  flux_pred_col="predicted", #including all predictions also for the measured data
+                                  datetime = "datetime",
+                                  preds = c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"), #same as used for gapfilling ("Ta_f","Ts_f","WTD_smooth","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta")
+                                  n = 100,
+                                  saving_folder = "D:/EC/Data_organized/Stortjarn/FINAL/Montecarlo"
+)
+
+mc_sim_sto_list
+
+#Gapfilling montecarlo
+montecarlo_sim_gf(mc_sim_path = "D:/EC/Data_organized/Stortjarn/FINAL/Montecarlo",
+                  mtry = gapfilling_list_sto$tuningmodel$bestTune$mtry, #this is the best tuning during the caret crossvalidation, should be fetched from the saved RF gapfilling model prior to using this function
+                  preds = c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"), #same as used in the original gapfilling
+                  flux_col = "ch4_flux_final",
+                  mc_sim_gf_path = "D:/EC/Data_organized/Stortjarn/FINAL/Montecarlo_gf")
+
+#Merging gapfilled montecarlo
+df_mc <- merge_montecarlo_sims(dir = "D:/EC/Data_organized/Stortjarn/FINAL/Montecarlo_gf",
+                               saving_dir = "D:/EC/Data_organized/Stortjarn/FINAL/Montecarlo_gf_merged")
+
+df_mc <- fread("D:/EC/Data_organized/Stortjarn/FINAL/Montecarlo_gf_merged/monte_carlo_all.csv")
+
+#Preparing random measurement error
+
+preds <- c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta")
+sto_err_df <- gapfilling_list_sto$site_df[,c("datetime","rand_err_ch4_flux","ch4_flux_final_filled", "quality", preds)]
+
+sto_err_df$rand_err_ch4_flux[which(sto_err_df$quality == "gapfilled")] <- NA
+sto_err_df$quality <- NULL
+preProcValues <- preProcess(sto_err_df, method = c("bagImpute"))
+sto_err_df_imp <- predict(preProcValues, sto_err_df)
+
+plot(rand_err_ch4_flux~datetime, data=sto_err_df_imp)
+
+sto_aggr_fluxes <- ch4_flux_aggregator(flux_df = gapfilling_list_sto$site_df,
+                                       df_mc = df_mc,
+                                       rd_err_df = sto_err_df_imp)
+
+saveRDS(sto_aggr_fluxes, "D:/EC/Data_organized/Stortjarn/FINAL/aggr_rds.RDS")
+sto_aggr_fluxes <- readRDS("D:/EC/Data_organized/Stortjarn/FINAL/aggr_rds.RDS")
+
+
+
+
+
+
+###############################
+#############Halsingfors
+###############################
+
+#First visualization
+# vis_list_hals <- visualization(path_EC = "D:/EC/Data_organized/Halsingfors/Eddypro_output/eddypro_Halsingfors_2022_07_07_full_output_2022-07-08T200652_adv.csv",
+#                               path_biomet = "D:/EC/Data_organized/Halsingfors/Biomet_gf/hals_met.csv")
+#
+# fluxes_meteo_hals <- vis_list_hals$data
+# vis_list_hals$graphs
+#
+# hals1_path <- "D:/EC/Data_organized/Halsingfors/Eddypro_output/PART_2020/eddypro_updateddetails_full_output_2021-02-26T220334_adv.csv"
+# hals2_path <- "D:/EC/Data_organized/Halsingfors/Eddypro_output/eddypro_Halsingfors_2022_07_07_full_output_2022-07-08T200652_adv.csv"
+#
+#
+# vis_list_hals1 <- visualization(path_EC = hals1_path, date_format =  "%d/%m/%Y",
+#                                path_biomet = "D:/EC/Data_organized/Halsingfors/Biomet_gf/hals_met.csv")
+# fluxes_meteohals1 <- vis_list_hals1$data
+# vis_list_hals1$graphs
+#
+
+
+hals1_path <- "D:/EC/Data_organized/Halsingfors/Eddypro_output/PART_2020/eddypro_updateddetails_full_output_2021-02-26T220334_adv.csv"
+hals2_path <- "D:/EC/Data_organized/Halsingfors/Eddypro_output/eddypro_Halsingfors_2022_07_07_full_output_2022-07-08T200652_adv.csv"
+
+hals_merged <- merge_2_EC(path_EC1=hals1_path,
+                      path_EC2=hals2_path,
+                      date_format_EC1 = "%d/%m/%Y",
+                      date_format_EC2 = "%Y-%m-%d",
+                      check_write_df=TRUE,
+                      writing_path = "D:/EC/Data_organized/Halsingfors/Eddypro_output/Merged_test")
+
+
+#visualizing from disk
+vis_list_hals <- visualization(path_EC = "D:/EC/Data_organized/Halsingfors/Eddypro_output/Merged_test/merged.csv",
+                              path_biomet = "D:/EC/Data_organized/Halsingfors/Biomet_gf/hals_met.csv")
+
+fluxes_meteo_hals <- vis_list_hals$data
+vis_list_hals$graphs
+
+#visualization from already loaded dataframe
+vis_list_hals <- visualization(check_path_EC = FALSE,
+                               EC_df = hals_merged,
+                               path_biomet = "D:/EC/Data_organized/Halsingfors/Biomet_gf/hals_met.csv")
+
+fluxes_meteo_hals <- vis_list_hals$data
+vis_list_hals$graphs
+
+
+#Quality control
+fluxes_meteo_hals_qc <- quality_control(fluxes_meteo_hals, Temp_col = "Ts", RSSI = TRUE,
+                                        RSSI_col = "diag_77_mean")
+
+# Additional hard flag visual...
+fluxes_meteo_hals_qc$ch4_flux_final[which(fluxes_meteo_hals_qc$ch4_flux_final >= 0.45)] <- NA
+
+# fluxes_meteo_deg_qc
+
+gapfilling_list_hals <- rf_gapfiller(site_df=fluxes_meteo_hals_qc,
+                                    datetime="datetime",
+                                    flux_col="ch4_flux_final",
+                                    preds=c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"),
+                                    max_mtry = NULL, #This is for trying values of mtry up to the max of either
+                                    #sqrt of the number of predictors, or the 1/3rd of the number of predictors
+                                    sitename="Halsingfors" #This variable is simply for annotating the plots with the site name.
+)
+
+saveRDS(gapfilling_list_hals, "D:/EC/Data_organized/Halsingfors/FINAL/gf_rds.RDS")
+
+gapfilling_list_hals <- readRDS("D:/EC/Data_organized/Halsingfors/FINAL/gf_rds.RDS")
+
+gapfilling_list_hals$pred_meas
+
+gapfilling_list_hals$gf_meas_time
+
+#Montecarlo simulation
+mc_sim_hals_list <- montecarlo_sim(df_gf = gapfilling_list_hals$site_df, #the gapfilled flux dataframe. This would be retrieved for instance from the rf_gapfiller function
+                                 flux_col="ch4_flux_final",
+                                 flux_pred_col="predicted", #including all predictions also for the measured data
+                                 datetime = "datetime",
+                                 preds = c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"), #same as used for gapfilling ("Ta_f","Ts_f","WTD_smooth","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta")
+                                 n = 100,
+                                 saving_folder = "D:/EC/Data_organized/Halsingfors/FINAL/Montecarlo"
+)
+
+#Gapfilling montecarlo
+#Is it the list that I am returning that creates the warning??? For sure it didn't display that list... Maybe because it has to be displayed too many times
+montecarlo_sim_gf(mc_sim_path = "D:/EC/Data_organized/Halsingfors/FINAL/Montecarlo",
+                  mtry = gapfilling_list_hals$tuningmodel$bestTune$mtry, #this is the best tuning during the caret crossvalidation, should be fetched from the saved RF gapfilling model prior to using this function
+                  preds = c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"), #same as used in the original gapfilling
+                  flux_col = "ch4_flux_final",
+                  mc_sim_gf_path = "D:/EC/Data_organized/Halsingfors/FINAL/Montecarlo_gf")
+
+#Merging gapfilled montecarlo
+df_mc <- merge_montecarlo_sims(dir = "D:/EC/Data_organized/Halsingfors/FINAL/Montecarlo_gf",
+                      saving_dir = "D:/EC/Data_organized/Halsingfors/FINAL/Montecarlo_gf_merged")
+
+df_mc <- fread("D:/EC/Data_organized/Halsingfors/FINAL/Montecarlo_gf_merged/monte_carlo_all.csv")
+
+#Preparing random measurement error
+
+preds <- c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta")
+hals_err_df <- gapfilling_list_hals$site_df[,c("datetime","rand_err_ch4_flux","ch4_flux_final_filled", "quality", preds)]
+
+hals_err_df$rand_err_ch4_flux[which(hals_err_df$quality == "gapfilled")] <- NA
+hals_err_df$quality <- NULL
+preProcValues <- preProcess(hals_err_df, method = c("bagImpute"))
+hals_err_df_imp <- predict(preProcValues, hals_err_df)
+
+plot(rand_err_ch4_flux~datetime, data=hals_err_df_imp)
+
+hals_aggr_fluxes <- ch4_flux_aggregator(flux_df = gapfilling_list_hals$site_df,
+                                       df_mc = df_mc,
+                                       rd_err_df = hals_err_df_imp)
+
+saveRDS(hals_aggr_fluxes, "D:/EC/Data_organized/Halsingfors/FINAL/aggr_rds.RDS")
+
+hals_aggr_fluxes <- readRDS("D:/EC/Data_organized/Halsingfors/FINAL/aggr_rds.RDS")
+
+
+
+###############################################################################
+# biomet_day <- biomet_aggregator(df=gapfilling_list_hals$site_df,#or we can use directly the gapfilled biomet file as well.
+#                                 aggr_var="day",
+#                                 biomet_vars=c("ch4_flux_final_filled","Ta_f", "Ts_f", "WTD_f", "PARin_f", "SNOWd"),
+#                                 aggr_fun=c("sum","mean","mean","mean","sum","sum"))
+#biomet aggregation
+biomet_day <- biomet_aggregator(df=gapfilling_list_deg$site_df,#or we can use directly the gapfilled biomet file as well.
+                          aggr_var="day",
+                          biomet_vars=c("ch4_flux_final_filled","Ta_f", "Ts_f", "WTD_f", "PARin_f"),
+                          aggr_fun=c("sum","mean","mean","mean","sum"))
+
+biomet_day$year <- lubridate::month(biomet_day$date)
+biomet_day$month <- lubridate::month(biomet_day$date)
+biomet_day$doy <- lubridate::yday(biomet_day$date)
+biomet_day$season <- ifelse(biomet_day$month %in% c(5:10), "growing_season", "non_growing_season")
+palette <- colorRampPalette(c("blue", "white", "red"))
+
+fig <- plot_ly(biomet_day, x = ~Ts_f, y = ~WTD_f, z = ~ch4_flux_final_filled, color = ~month, colors=palette(200))
+fig

@@ -25,7 +25,8 @@ Imports:
     rlang,
     magrittr,
     readr,
-    lazyeval
+    lazyeval,
+    purrr
 RoxygenNote: 7.2.0
 Suggests: 
     testthat (>= 3.0.0)
