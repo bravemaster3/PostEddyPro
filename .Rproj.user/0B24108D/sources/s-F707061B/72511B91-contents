@@ -1,0 +1,49 @@
+headers <- colnames(data.table::fread("D:/EC/Data_organized/Halmyran/FINAL/CO2/Montecarlo/For_ReddyProc_NEE_GF.txt"))
+units <- scan("D:/EC/Data_organized/Halmyran/FINAL/CO2/Montecarlo/For_ReddyProc_NEE_GF.txt", what = character(), skip=1, nlines = 1, sep="\t")
+df_gf <- data.table::fread("D:/EC/Data_organized/Halmyran/FINAL/CO2/Montecarlo/For_ReddyProc_NEE_GF.txt", skip = 2, header = F)
+names(df_gf) <- headers
+
+df_gf <- as.data.frame(df_gf)
+df_gf[df_gf== -9999] <- NA
+
+df_gf$date <- as.Date(df_gf$DoY, origin = paste0(df_gf$Year-1,"-12-31"))
+df_gf$time <- hms::hms(hours=df_gf$Hour)
+
+df_gf$datetime <- as.POSIXct(paste(df_gf$date,df_gf$time), format="%Y-%m-%d %H:%M",tz="UTC")
+
+plot(NEE_f~datetime, data=df_gf)
+
+
+
+
+
+
+
+df_gf$year <- lubridate::year(df_gf[,"datetime"])
+df_gf$week <- lubridate::week(df_gf[,"datetime"])
+# df_gf$year <- lubridate::year(df_gf[,datetime])
+df_gf_sum1 <- df_gf %>%
+  dplyr::group_by(year, week) %>%
+  dplyr::summarize(residuals_median = stats::median(residuals,na.rm=TRUE),
+                   residuals_sigma = mean(abs(residuals - residuals_median), na.rm=TRUE)*sqrt(2)) #%>%
+
+df_gf_sum2 <- df_gf %>%
+  dplyr::group_by(year,week) %>%
+  dplyr::summarize_(flux_median = lazyeval::interp(~median(var, na.rm = T), var = as.name(flux_pred_col)),
+                    flux_mean = lazyeval::interp(~mean(var, na.rm = T), var = as.name(flux_pred_col)))
+
+
+df_gf_sum <- merge(df_gf_sum1, df_gf_sum2, all = TRUE)
+#residual_list$df_gf_sum_month <- df_gf_sum
+
+plot(residuals_sigma~flux_median, data=df_gf_sum)
+
+
+plot(residuals_sigma~flux_median, data=df_gf_sum[which(df_gf_sum$flux_median>0),])
+abline(lm(residuals_sigma~flux_median, data=df_gf_sum[which(df_gf_sum$flux_median>0),]))
+
+plot(residuals_sigma~flux_median, data=df_gf_sum[which(df_gf_sum$flux_median<=0),])
+abline(lm(residuals_sigma~flux_median, data=df_gf_sum[which(df_gf_sum$flux_median<=0),]))
+
+
+

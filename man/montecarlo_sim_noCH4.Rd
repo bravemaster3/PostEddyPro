@@ -6,6 +6,7 @@
 \usage{
 montecarlo_sim_noCH4(
   path_to_file,
+  path_to_file_nonGF,
   flux_col = c("NEE", "H2O"),
   flux_pred_col = c("NEE_fall", "H2O_fall"),
   n = 100,
@@ -14,6 +15,8 @@ montecarlo_sim_noCH4(
 }
 \arguments{
 \item{path_to_file}{path to the gapfilled flux dataframe (Reddyproc gapfilled)}
+
+\item{path_to_file_nonGF}{path to the non gapfilled flux dataframe formated for REddyproc}
 
 \item{flux_col}{original flux column: 'NEE' for CO2 flux OR 'H2O' for water flux}
 

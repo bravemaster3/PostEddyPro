@@ -14,7 +14,7 @@ formatting_fluxes_REddyProc(
   tsoil_col = "Ts_f",
   rh_col = "RH_f",
   vpd_col = "VPD_f",
-  ustar_col = "u_star",
+  ustar_col = "u*",
   saving_path
 )
 }
@@ -40,7 +40,7 @@ If following the standard workflow, use the output from the quality check}
 
 \item{ustar_col}{u* column name}
 
-\item{saving_path}{saving path where the formatted file will be saved}
+\item{saving_path}{saving folder path where the formatted file will be saved}
 }
 \value{
 No value returned, but a file saved to disk

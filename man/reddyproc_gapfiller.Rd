@@ -7,6 +7,7 @@
 reddyproc_gapfiller(
   formatted_file_path,
   saving_folder,
+  file_name = NULL,
   FLUX = c("NEE", "H2O"),
   longitude = 19.556646,
   latitude = 64.18198,
@@ -17,6 +18,8 @@ reddyproc_gapfiller(
 \item{formatted_file_path}{path to the file ready for ReddyProc gapfilling. Typically the output from the "formatting_fluxes_REddyProc" function of the PostEddyPro package}
 
 \item{saving_folder}{path to the folder where the gapfilled fluxes will be saved}
+
+\item{file_name}{fine name with extension (only base name with extension, e.g. fluxes.txt)}
 
 \item{FLUX}{flux column in the final output: NEE for CO2 flux OR H2O for water flux}
 

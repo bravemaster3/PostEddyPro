@@ -4,7 +4,13 @@
 \alias{ch4_flux_aggregator}
 \title{Aggregate methane fluxes and uncertainties (measurement and gapfilling related) to 30min, daily, monthly and yearly}
 \usage{
-ch4_flux_aggregator(flux_df, df_mc, rd_err_df)
+ch4_flux_aggregator(
+  flux_df,
+  df_mc,
+  rd_err_df,
+  month_start_growing_season = 5,
+  month_end_growing_season = 10
+)
 }
 \arguments{
 \item{flux_df}{flux dataframe output from the random forest gapfilling}
@@ -12,9 +18,13 @@ ch4_flux_aggregator(flux_df, df_mc, rd_err_df)
 \item{df_mc}{dataframe of merged montecarlo simulation already gapfilled}
 
 \item{rd_err_df}{dataframe containing random errors already imputed}
+
+\item{month_start_growing_season}{Month of the start of growing season. Default is 5}
+
+\item{month_end_growing_season}{Month of the end of growing season. Default is 10}
 }
 \value{
-a list of half-hourly, daily, monthly and yearly aggregated flux dataframes
+a list of half-hourly, hourly, daily, weekly, monthly and yearly aggregated flux dataframes
 }
 \description{
 Aggregate methane fluxes and uncertainties (measurement and gapfilling related) to 30min, daily, monthly and yearly
