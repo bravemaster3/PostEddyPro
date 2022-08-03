@@ -1,0 +1,26 @@
+{
+    "id": "AE310B7E",
+    "path": "C:/github/PostEddyPro/R/plotter_daily.R",
+    "project_path": "R/plotter_daily.R",
+    "type": "r_source",
+    "hash": "1806378248",
+    "contents": "",
+    "dirty": false,
+    "created": 1659235901680.0,
+    "source_on_save": false,
+    "relative_order": 55,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "45,0",
+        "scrollLine": "28"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1659305474,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1659305474926,
+    "read_only": false,
+    "read_only_alternatives": []
+}

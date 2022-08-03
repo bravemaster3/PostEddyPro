@@ -8,7 +8,7 @@
     "dirty": false,
     "created": 1658168948577.0,
     "source_on_save": false,
-    "relative_order": 36,
+    "relative_order": 30,
     "properties": {
         "expression": "df_30min",
         "caption": "df_30min",

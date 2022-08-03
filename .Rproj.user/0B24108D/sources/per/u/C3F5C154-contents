@@ -1,0 +1,4 @@
+dat <- data.frame(site = rep(c(NA,8,1), each = 3), score = runif(9))
+as.numeric(factor(dat$site))
+dat$num <- data.table::rleid(dat$site)
+str(dat)
