@@ -1,0 +1,1 @@
+plotter_monthly_anomalies_2(list(sto_month), x_label = "Monthly Ts 15cm  anomaly (°C)", x_col="WTD_f", y_col = "FCH4_sum", levels_sites = "Halmyran")

@@ -1,0 +1,10 @@
+deg_aggr_ch4$flux_df_month$yearmon <- paste(deg_aggr_ch4$flux_df_month$year, deg_aggr_ch4$flux_df_month$month, sep="-")
+sum(deg_aggr_ch4$flux_df_month[which(deg_aggr_ch4$flux_df_month$yearmon %in% c("2021-2", "2021-3")), "FCH4_sum"])
+sum(deg_aggr_ch4$flux_df_month[which(deg_aggr_ch4$flux_df_month$yearmon %in% c("2022-2", "2022-3")), "FCH4_sum"])
+
+
+halm_aggr_ch4$flux_df_month$yearmon <- paste(halm_aggr_ch4$flux_df_month$year, halm_aggr_ch4$flux_df_month$month, sep="-")
+sum(halm_aggr_ch4$flux_df_month[which(halm_aggr_ch4$flux_df_month$yearmon %in% c("2021-2", "2021-3")), "FCH4_sum"])
+sum(halm_aggr_ch4$flux_df_month[which(halm_aggr_ch4$flux_df_month$yearmon %in% c("2022-2", "2022-3")), "FCH4_sum"])
+
+

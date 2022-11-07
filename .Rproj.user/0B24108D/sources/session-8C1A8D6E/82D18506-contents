@@ -1,0 +1,648 @@
+#library(infotheo)
+library(mpmi)
+#mutinformation(deg_day$FCH4_sum,deg_day$GPP_sum)
+cmi(deg_day[,c("FCH4_sum","GPP_sum")])
+cmi(deg_day[,c("FCH4_sum","Ts_f")])
+
+# entropy(deg_day$FCH4_sum,deg_day$GPP_sum)
+
+
+#
+library(dplyr)
+library(lavaan)
+library(semPlot)
+library(mgcv)
+#library(gam)
+# library(sesem)
+
+#halfhour
+
+model <- '
+FCH4 ~ GPP + Ts_f + PARin_f + WTD_f
+'
+fit <- cfa(model, data = deg_30min)
+
+summary(fit)
+
+semPaths(fit, 'std', layout = 'circle')
+
+#Daily
+model <- '
+FCH4_sum ~ GPP_sum + Ts_f + PARin_f + WTD_f
+'
+fit <- cfa(model, data = deg_day)
+
+summary(fit)
+
+semPaths(fit, 'std', layout = 'tree')
+
+lavaanPlot(model)
+
+#GAMS
+
+#halfhour
+
+#fit <- gam(FCH4 ~ s(GPP)+s(Ts_f)+s(PARin_f)+s(WTD_f), data = deg_30min)
+
+
+plot(ggeffects::ggpredict(fit), facets = TRUE)
+
+fit <- gam(FCH4 ~ s(GPP, bs="cr")+s(Ts_f, bs="cr")+s(PARin_f, bs="cr")+s(WTD_f, bs="cr"), data = deg_30min)
+summary(fit)
+
+
+fit <- gam(FCH4 ~ s(GPP)+s(Ts_f)+s(PARin_f)+s(WTD_f), data = deg_30min)
+summary(fit)
+plot(ggeffects::ggpredict(fit), facets = TRUE)
+
+# gratia::draw(fit)
+
+# model = 'FCH4 ~ s(GPP, bs="cr")+s(Ts_f, bs="cr")+s(PARin_f, bs="cr")+s(WTD_f, bs="cr")'
+# # semPaths(cfa(model = 'FCH4 ~ s(GPP, bs="cr")+s(Ts_f, bs="cr")+s(PARin_f, bs="cr")+s(WTD_f, bs="cr")', data= deg_30min), 'std', layout = 'circle')
+#
+
+lavaanPlot(model = fit)
+
+
+semPaths(semPlotModel(fit), 'std', layout = 'circle')
+gam.path(fit)
+
+
+##daily
+fit <- gam::gam(FCH4_sum ~ gam::s(GPP_sum)+gam::s(Ts_f)+gam::s(PARin_f)+gam::s(WTD_f), data = deg_day)
+
+
+summary(fit)
+
+
+
+
+
+
+
+fit <- glm(FCH4_sum ~ GPP_sum+Ts_f+PARin_f +WTD_f, data = sto_day)
+
+
+summary(fit)
+with(summary(fit), 1 - deviance/null.deviance)
+
+semPaths(sem(fit), 'std', layout = 'circle')
+
+
+#############################
+fit <- gam(FCH4_sum ~s(Reco_sum) + s(Ts_f) + s(WTD_f) + s(PARin_f), data=halm_day)
+summary(fit)
+
+plot(ggeffects::ggpredict(fit), facets = TRUE)
+
+
+######################################ALL SITES TOGETHER
+df_all_day <- Reduce(function(...) rbind(...), list(halm_day,deg_day,sto_day,hals_day)) %>%
+  select(c("PARin_f", "Ts_f","Ta_f", "WTD_f","H2O_sum", "Reco_sum", "GPP_sum", "NEE_sum", "FCH4_sum","Site"))%>%
+  mutate(Site=factor(Site))
+
+fit <- mgcv::gam(FCH4_sum ~s(GPP_sum) + s(Ts_f) + s(WTD_f) + s(PARin_f)+ s(Site, bs="re"), data=df_all_day)
+summary(fit)
+
+plot(ggeffects::ggpredict(fit), facets = TRUE)
+
+
+#########################################Variable importance
+library(dplyr)
+library(caret)
+
+gam1 <- caret::train(
+  FCH4_sum ~ GPP_sum + Ts_f + WTD_f + PARin_f,
+  data =deg_day[complete.cases(deg_day[,c("FCH4_sum","GPP_sum", "Ts_f", "WTD_f", "PARin_f")]),c("FCH4_sum","GPP_sum", "Ts_f", "WTD_f", "PARin_f")],
+  method = "gam"
+)
+
+varImp(gam1)
+
+
+x <- varImp(gam1, scale = TRUE)
+x
+x$importance %>%
+  mutate(
+    Variable = rownames(.), Overall = Overall / sum(Overall) * 100
+  ) %>%
+  arrange(desc(Overall)) %>%
+  select(Variable, Overall)
+
+
+#################################################Deviance...contributions
+#https://www.sciencedirect.com/science/article/pii/S1618866717301607
+#https://stackoverflow.com/questions/38516139/gam-r-variance-explained-by-variable?fbclid=IwAR2Z-LoCCqut8AjrAM_q80XpNZMvJGGAE5miUjneBdLaKTrPlYicOUYSqU8
+#https://stats.stackexchange.com/questions/79399/calculate-variance-explained-by-each-predictor-in-multiple-regression-using-r?fbclid=IwAR0YuVNecjrr6TLPS1HHX8mE5e-QVfdvTL3ur3lGYJvLEIU_jfOivoAhaO4
+#https://stats.stackexchange.com/questions/497317/how-to-calculate-percent-partial-deviance-explained-by-each-predictor-variable-i?fbclid=IwAR0YuVNecjrr6TLPS1HHX8mE5e-QVfdvTL3ur3lGYJvLEIU_jfOivoAhaO4
+full_model <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20) + s(WTD_f, k=20) + s(PARin_f, k=20), data=deg_day)
+summary(full_model)
+
+null_model <- gam(FCH4_sum ~ 1, data=deg_day)
+summary(null_model)
+
+model_no_PAR <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20) + s(WTD_f, k=20), data=deg_day)
+summary(model_no_PAR)
+
+model_no_WTD <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20) + s(PARin_f, k=20), data=deg_day)
+summary(model_no_WTD)
+
+model_no_Ts <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(WTD_f, k=20) + s(PARin_f, k=20), data=deg_day)
+summary(model_no_Ts)
+
+model_no_GPP <- gam(FCH4_sum ~ s(Ts_f, k=20) + s(WTD_f, k=20) + s(PARin_f, k=20), data=deg_day)
+summary(model_no_GPP)
+
+model_no_GPP_Ts <- gam(FCH4_sum ~ s(WTD_f, k=20) + s(PARin_f, k=20), data=deg_day)
+summary(model_no_GPP_Ts)
+
+model_no_GPP_WTD <- gam(FCH4_sum ~ s(Ts_f, k=20) + s(PARin_f, k=20), data=deg_day)
+summary(model_no_GPP_WTD)
+
+model_no_Ts_WTD <- gam(FCH4_sum ~ s(GPP_sum, k=20) + s(PARin_f, k=20), data=deg_day)
+summary(model_no_Ts_WTD)
+
+model_no_GPP_Ts_WTD <- gam(FCH4_sum ~ s(PARin_f, k=20), data=deg_day)
+summary(model_no_GPP_Ts_WTD)
+
+model_no_PAR_Ts_WTD <- gam(FCH4_sum ~ s(GPP_sum, k=20), data=deg_day)
+summary(model_no_PAR_Ts_WTD)
+
+
+overall_dev <- (deviance(null_model) - deviance(full_model))/deviance(null_model)
+overall_dev
+
+PAR_dev <- (deviance(model_no_PAR) - deviance(full_model))/deviance(null_model)
+PAR_dev
+
+GPP_dev <- (deviance(model_no_GPP) - deviance(full_model))/deviance(null_model)
+GPP_dev
+
+Ts_dev <- (deviance(model_no_Ts) - deviance(full_model))/deviance(null_model)
+Ts_dev
+
+WTD_dev <- (deviance(model_no_WTD) - deviance(full_model))/deviance(null_model)
+WTD_dev
+
+GPP_Ts_dev <- (deviance(model_no_GPP_Ts) - deviance(full_model))/deviance(null_model)
+GPP_Ts_dev
+
+GPP_WTD_dev <- (deviance(model_no_GPP_WTD) - deviance(full_model))/deviance(null_model)
+GPP_WTD_dev
+
+Ts_WTD_dev <- (deviance(model_no_GPP_WTD) - deviance(full_model))/deviance(null_model)
+Ts_WTD_dev
+
+GPP_Ts_WTD_dev <- (deviance(model_no_GPP_Ts_WTD) - deviance(full_model))/deviance(null_model)
+GPP_Ts_WTD_dev
+
+PAR_Ts_WTD_dev <- (deviance(model_no_PAR_Ts_WTD) - deviance(full_model))/deviance(null_model)
+PAR_Ts_WTD_dev
+
+#################################################GAM 3 variables only, DEG
+
+deg_day_sc <- deg_day %>%
+  filter(month %in% c(5:10))
+
+
+
+ggplot(deg_day_sc, aes(GPP_sum, FCH4_sum))+geom_point()
+ggplot(deg_day_sc, aes(Ts_f, FCH4_sum))+geom_point()
+ggplot(deg_day_sc, aes(WTD_f, FCH4_sum))+geom_point()
+
+full_model <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20) + s(WTD_f, k=20), data=deg_day_sc)
+summary(full_model)
+par(mfrow=c(2,2))
+gam.check(full_model)
+plot(ggeffects::ggpredict(full_model), facets = TRUE)
+
+null_model <- gam(FCH4_sum ~ 1, data=deg_day_sc)
+summary(null_model)
+
+
+model_no_WTD <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20), data=deg_day_sc)
+summary(model_no_WTD)
+
+model_no_Ts <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(WTD_f, k=20), data=deg_day_sc)
+summary(model_no_Ts)
+
+model_no_GPP <- gam(FCH4_sum ~ s(Ts_f, k=20) + s(WTD_f, k=20), data=deg_day_sc)
+summary(model_no_GPP)
+
+model_no_GPP_Ts <- gam(FCH4_sum ~ s(WTD_f, k=20), data=deg_day_sc)
+summary(model_no_GPP_Ts)
+
+model_no_GPP_WTD <- gam(FCH4_sum ~ s(Ts_f, k=20), data=deg_day_sc)
+summary(model_no_GPP_WTD)
+
+model_no_Ts_WTD <- gam(FCH4_sum ~ s(GPP_sum, k=20), data=deg_day_sc)
+summary(model_no_Ts_WTD)
+
+
+
+overall_dev <- (deviance(null_model) - deviance(full_model))/deviance(null_model)
+overall_dev
+
+GPP_dev <- (deviance(model_no_GPP) - deviance(full_model))/deviance(null_model)
+GPP_dev
+
+Ts_dev <- (deviance(model_no_Ts) - deviance(full_model))/deviance(null_model)
+Ts_dev
+
+WTD_dev <- (deviance(model_no_WTD) - deviance(full_model))/deviance(null_model)
+WTD_dev
+
+GPP_Ts_dev <- (deviance(model_no_GPP_Ts) - deviance(full_model))/deviance(null_model)
+GPP_Ts_dev
+
+GPP_WTD_dev <- (deviance(model_no_GPP_WTD) - deviance(full_model))/deviance(null_model)
+GPP_WTD_dev
+
+Ts_WTD_dev <- (deviance(model_no_Ts_WTD) - deviance(full_model))/deviance(null_model)
+Ts_WTD_dev
+
+GPP_dev + Ts_dev + WTD_dev + GPP_Ts_dev + GPP_WTD_dev + Ts_WTD_dev
+
+#################################################GAM 3 variables only, HALS
+
+hals_day_sc <- hals_day %>%
+  filter(month %in% c(5:10))
+
+ggplot(hals_day_sc, aes(GPP_sum, FCH4_sum))+geom_point()
+ggplot(hals_day_sc, aes(Ts_f, FCH4_sum))+geom_point()
+ggplot(hals_day_sc, aes(WTD_f, FCH4_sum))+geom_point()
+
+full_model <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20) + s(WTD_f, k=20), data=hals_day_sc)
+summary(full_model)
+par(mfrow=c(2,2))
+gam.check(full_model)
+
+plot(ggeffects::ggpredict(full_model), facets = TRUE)
+
+null_model <- gam(FCH4_sum ~ 1, data=hals_day_sc)
+summary(null_model)
+
+
+model_no_WTD <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20), data=hals_day_sc)
+summary(model_no_WTD)
+
+model_no_Ts <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(WTD_f, k=20), data=hals_day_sc)
+summary(model_no_Ts)
+
+model_no_GPP <- gam(FCH4_sum ~ s(Ts_f, k=20) + s(WTD_f, k=20), data=hals_day_sc)
+summary(model_no_GPP)
+
+model_no_GPP_Ts <- gam(FCH4_sum ~ s(WTD_f, k=20), data=hals_day_sc)
+summary(model_no_GPP_Ts)
+
+model_no_GPP_WTD <- gam(FCH4_sum ~ s(Ts_f, k=20), data=hals_day_sc)
+summary(model_no_GPP_WTD)
+
+model_no_Ts_WTD <- gam(FCH4_sum ~ s(GPP_sum, k=20), data=hals_day_sc)
+summary(model_no_Ts_WTD)
+
+
+
+overall_dev <- (deviance(null_model) - deviance(full_model))/deviance(null_model)
+overall_dev
+
+GPP_dev <- (deviance(model_no_GPP) - deviance(full_model))/deviance(null_model)
+GPP_dev
+
+Ts_dev <- (deviance(model_no_Ts) - deviance(full_model))/deviance(null_model)
+Ts_dev
+
+WTD_dev <- (deviance(model_no_WTD) - deviance(full_model))/deviance(null_model)
+WTD_dev
+
+GPP_Ts_dev <- (deviance(model_no_GPP_Ts) - deviance(full_model))/deviance(null_model)
+GPP_Ts_dev
+
+GPP_WTD_dev <- (deviance(model_no_GPP_WTD) - deviance(full_model))/deviance(null_model)
+GPP_WTD_dev
+
+Ts_WTD_dev <- (deviance(model_no_Ts_WTD) - deviance(full_model))/deviance(null_model)
+Ts_WTD_dev
+
+GPP_dev + Ts_dev + WTD_dev + GPP_Ts_dev + GPP_WTD_dev + Ts_WTD_dev
+
+
+
+
+#################################################GAM 3 variables only, HALM
+halm_day_sc <- halm_day %>%
+  filter(month %in% c(5:10))
+
+ggplot(halm_day_sc, aes(GPP_sum, FCH4_sum))+geom_point()
+ggplot(halm_day_sc, aes(Ts_f, FCH4_sum))+geom_point()
+ggplot(halm_day_sc, aes(WTD_f, FCH4_sum))+geom_point()
+
+full_model <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20) + s(WTD_f, k=20), data=halm_day_sc)
+summary(full_model)
+par(mfrow=c(2,2))
+gam.check(full_model)
+
+plot(ggeffects::ggpredict(full_model), facets = TRUE)
+
+null_model <- gam(FCH4_sum ~ 1, data=halm_day_sc)
+summary(null_model)
+
+
+model_no_WTD <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20), data=halm_day_sc)
+summary(model_no_WTD)
+
+model_no_Ts <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(WTD_f, k=20), data=halm_day_sc)
+summary(model_no_Ts)
+
+model_no_GPP <- gam(FCH4_sum ~ s(Ts_f, k=20) + s(WTD_f, k=20), data=halm_day_sc)
+summary(model_no_GPP)
+
+model_no_GPP_Ts <- gam(FCH4_sum ~ s(WTD_f, k=20), data=halm_day_sc)
+summary(model_no_GPP_Ts)
+
+model_no_GPP_WTD <- gam(FCH4_sum ~ s(Ts_f, k=20), data=halm_day_sc)
+summary(model_no_GPP_WTD)
+
+model_no_Ts_WTD <- gam(FCH4_sum ~ s(GPP_sum, k=20), data=halm_day_sc)
+summary(model_no_Ts_WTD)
+
+
+
+overall_dev <- (deviance(null_model) - deviance(full_model))/deviance(null_model)
+overall_dev
+
+GPP_dev <- (deviance(model_no_GPP) - deviance(full_model))/deviance(null_model)
+GPP_dev
+
+Ts_dev <- (deviance(model_no_Ts) - deviance(full_model))/deviance(null_model)
+Ts_dev
+
+WTD_dev <- (deviance(model_no_WTD) - deviance(full_model))/deviance(null_model)
+WTD_dev
+
+GPP_Ts_dev <- (deviance(model_no_GPP_Ts) - deviance(full_model))/deviance(null_model)
+GPP_Ts_dev
+
+GPP_WTD_dev <- (deviance(model_no_GPP_WTD) - deviance(full_model))/deviance(null_model)
+GPP_WTD_dev
+
+Ts_WTD_dev <- (deviance(model_no_Ts_WTD) - deviance(full_model))/deviance(null_model)
+Ts_WTD_dev
+
+
+GPP_dev + Ts_dev + WTD_dev + GPP_Ts_dev + GPP_WTD_dev + Ts_WTD_dev
+
+
+#################################################GAM 3 variables only, STO
+sto_day_sc <- sto_day %>%
+  filter(month %in% c(5:10))
+
+
+ggplot(sto_day_sc, aes(GPP_sum, FCH4_sum))+geom_point()
+ggplot(sto_day_sc, aes(Ts_f, FCH4_sum))+geom_point()
+ggplot(sto_day_sc, aes(WTD_f, FCH4_sum))+geom_point()
+
+
+full_model <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20) + s(WTD_f, k=20), data=sto_day_sc)
+summary(full_model)
+par(mfrow=c(2,2))
+gam.check(full_model)
+
+plot(ggeffects::ggpredict(full_model), facets = TRUE)
+
+null_model <- gam(FCH4_sum ~ 1, data=sto_day_sc)
+summary(null_model)
+
+
+model_no_WTD <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20), data=sto_day_sc)
+summary(model_no_WTD)
+
+model_no_Ts <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(WTD_f, k=20), data=sto_day_sc)
+summary(model_no_Ts)
+
+model_no_GPP <- gam(FCH4_sum ~ s(Ts_f, k=20) + s(WTD_f, k=20), data=sto_day_sc)
+summary(model_no_GPP)
+
+model_no_GPP_Ts <- gam(FCH4_sum ~ s(WTD_f, k=20), data=sto_day_sc)
+summary(model_no_GPP_Ts)
+
+model_no_GPP_WTD <- gam(FCH4_sum ~ s(Ts_f, k=20), data=sto_day_sc)
+summary(model_no_GPP_WTD)
+
+model_no_Ts_WTD <- gam(FCH4_sum ~ s(GPP_sum, k=20), data=sto_day_sc)
+summary(model_no_Ts_WTD)
+
+
+
+overall_dev <- (deviance(null_model) - deviance(full_model))/deviance(null_model)
+overall_dev
+
+GPP_dev <- (deviance(model_no_GPP) - deviance(full_model))/deviance(null_model)
+GPP_dev
+
+Ts_dev <- (deviance(model_no_Ts) - deviance(full_model))/deviance(null_model)
+Ts_dev
+
+WTD_dev <- (deviance(model_no_WTD) - deviance(full_model))/deviance(null_model)
+WTD_dev
+
+GPP_Ts_dev <- (deviance(model_no_GPP_Ts) - deviance(full_model))/deviance(null_model)
+GPP_Ts_dev
+
+GPP_WTD_dev <- (deviance(model_no_GPP_WTD) - deviance(full_model))/deviance(null_model)
+GPP_WTD_dev
+
+Ts_WTD_dev <- (deviance(model_no_Ts_WTD) - deviance(full_model))/deviance(null_model)
+Ts_WTD_dev
+
+
+GPP_dev + Ts_dev + WTD_dev + GPP_Ts_dev + GPP_WTD_dev + Ts_WTD_dev
+#########
+#################################################GAM 3 variables only, STO SCALED and CENTERED
+sto_day_sc <- sto_day %>%
+  filter(month %in% c(5:10)) %>%
+  #mutate(FCH4_sum = FCH4_sum + min(FCH4_sum, na.rm=TRUE)) %>%
+  dplyr::select(FCH4_sum, GPP_sum, WTD_f, Ts_f)%>%
+  mutate_all(~(scale(.) %>% as.vector))
+
+ggplot(sto_day_sc, aes(GPP_sum, FCH4_sum))+geom_point()
+ggplot(sto_day_sc, aes(Ts_f, FCH4_sum))+geom_point()
+ggplot(sto_day_sc, aes(WTD_f, FCH4_sum))+geom_point()
+
+full_model <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20) + s(WTD_f, k=20), data=sto_day_sc)
+summary(full_model)
+par(mfrow=c(2,2))
+gam.check(full_model)
+
+plot(ggeffects::ggpredict(full_model), facets = TRUE)
+
+null_model <- gam(FCH4_sum ~ 1, data=sto_day_sc)
+summary(null_model)
+
+
+model_no_WTD <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(Ts_f, k=20), data=sto_day_sc)
+summary(model_no_WTD)
+
+
+
+model_no_Ts <- gam(FCH4_sum ~s(GPP_sum, k=20) + s(WTD_f, k=20), data=sto_day_sc)
+summary(model_no_Ts)
+
+model_no_GPP <- gam(FCH4_sum ~ s(Ts_f, k=20) + s(WTD_f, k=20), data=sto_day_sc)
+summary(model_no_GPP)
+
+model_no_GPP_Ts <- gam(FCH4_sum ~ s(WTD_f, k=20), data=sto_day_sc)
+summary(model_no_GPP_Ts)
+
+model_no_GPP_WTD <- gam(FCH4_sum ~ s(Ts_f, k=20), data=sto_day_sc)
+summary(model_no_GPP_WTD)
+
+model_no_Ts_WTD <- gam(FCH4_sum ~ s(GPP_sum, k=20), data=sto_day_sc)
+summary(model_no_Ts_WTD)
+
+
+
+overall_dev <- (deviance(null_model) - deviance(full_model))/deviance(null_model)
+overall_dev
+
+GPP_dev <- (deviance(model_no_GPP) - deviance(full_model))/deviance(null_model)
+GPP_dev
+
+Ts_dev <- (deviance(model_no_Ts) - deviance(full_model))/deviance(null_model)
+Ts_dev
+
+WTD_dev <- (deviance(model_no_WTD) - deviance(full_model))/deviance(null_model)
+WTD_dev
+
+GPP_Ts_dev <- (deviance(model_no_GPP_Ts) - deviance(full_model))/deviance(null_model)
+GPP_Ts_dev
+
+GPP_WTD_dev <- (deviance(model_no_GPP_WTD) - deviance(full_model))/deviance(null_model)
+GPP_WTD_dev
+
+Ts_WTD_dev <- (deviance(model_no_Ts_WTD) - deviance(full_model))/deviance(null_model)
+Ts_WTD_dev
+
+
+
+par(mfrow=c(1,1))
+
+
+##########################################################################################################################################
+#######################Trying to fit individual functions and use a transformation plus multiple linear regression...
+#install_github("onofriandreapg/aomisc")
+#https://www.r-bloggers.com/2021/04/other-useful-functions-for-nonlinear-regression-threshold-models-and-all-that/?fbclid=IwAR3-LlgjD9btod81AZzr3A0ImkyJwdwaoN3ataSfJbyKfqWqNzlNL-EsDOU
+library(aomisc)
+
+
+sto_day_trans <- sto_day %>%
+  filter(!is.na(WTD_f)) %>%
+  mutate(WTD_f_trans = WTD_f + 50,
+         FCH4_trans = log(FCH4_sum))
+
+##WTD
+ggplot(sto_day_trans, aes(WTD_f, FCH4_sum))+geom_point()
+#  model <- nls(FCH4_sum ~ NLS.W1.4(WTD_f_trans, b, c, d, e), data = sto_day_trans)#non least square, weibul 1, 4 parameters
+# model.2 <- nls(FCH4_sum ~ NLS.W1.3(WTD_f_trans, b, d, e), data = sto_day_trans)
+# #model.3 <- nls(FCH4_sum/max(FCH4_sum, na.rm = TRUE) ~ NLS.W1.2(WTD_f_trans, b, e), data = sto_day_trans)
+# # model.3 <- nls(FW/max(FW) ~ NLS.W1.2(Dose, b, e), data = brassica)
+
+model <- drm(FCH4_sum ~ WTD_f_trans, fct = W1.4(), data = sto_day_trans)
+model.2 <- drm(FCH4_sum ~ WTD_f_trans, fct = W1.3(), data = sto_day_trans)
+#model.3 <- drm(FW/max(FW) ~ Dose, fct = W1.2(), data = brassica)
+
+
+# model <- nls(FCH4_trans ~ NLS.W1.4(WTD_f_trans, b, c, d, e), data = sto_day_trans)
+# model <- drm(FCH4_trans ~ WTD_f_trans, fct = W1.4(), data = sto_day_trans)
+
+summary(model)
+
+plot(model, ylim = c(0,0.15), main = "Weibull type 1")
+#
+# plot(model, ylim = c(-6,-2), main = "Weibull type 1")
+
+#Y=c+(d−c){1−exp{−exp[b(log(X)−log(e))]}}
+
+mod_summary <- summary(model)
+str(mod_summary)
+
+plot(residuals(model))
+
+
+b_est = mod_summary$coefficients[1,1]
+c_est = mod_summary$coefficients[2,1]
+d_est = mod_summary$coefficients[3,1]
+e_est = mod_summary$coefficients[4,1]
+
+# sto_day_trans <- sto_day_trans %>%
+#   mutate(FCH4_pred = c_est+(d_est-c_est)*(1-exp(-exp(b_est*(log(WTD_f_trans)-log(e_est))))))
+
+sto_day_trans$FCH4_pred_WTD <- c_est+(d_est-c_est)*(1-exp(-exp(-b_est*(log(sto_day_trans$WTD_f_trans)-log(e_est)))))
+
+rsq <- function (x, y) cor(x, y)^2
+rsq(sto_day_trans$FCH4_pred, sto_day_trans$FCH4_sum)
+
+plot(FCH4_pred_WTD ~ FCH4_sum, data=sto_day_trans)
+
+#GPP
+ggplot(sto_day_sc, aes(GPP_sum, FCH4_sum))+geom_point()
+
+model <- lm(FCH4_sum ~ GPP_sum, data=sto_day_trans)
+
+summary(model)
+model2 <- update(model,na.action=na.exclude)
+sto_day_trans$FCH4_pred_GPP <- predict(model2, newdata = sto_day_trans)
+plot(FCH4_pred_GPP ~ FCH4_sum, data=sto_day_trans)
+
+
+#Ts
+
+g <- ggplot(sto_day_trans, aes(Ts_f, FCH4_sum))+geom_point()
+g
+model <- nls(FCH4_sum ~ a*exp(r*Ts_f), data=sto_day_trans,
+                     start = list(a = 0.5, r = 0.2))
+summary(model)
+
+coef(model)
+
+model2 <- update(model, na.action="na.exclude")
+sto_day_trans$FCH4_pred_Ts <- predict(model2, newdata = sto_day_trans)
+plot(FCH4_pred_Ts ~ FCH4_sum, data=sto_day_trans)
+plot(summary(model)$residuals)
+
+g+geom_line(data=sto_day_trans, mapping=aes(x = Ts_f, y=FCH4_pred_Ts), color="red")
+
+
+#Trying the multiple linear regression
+
+# model <- gam(FCH4_sum ~ s(FCH4_pred_GPP, k=20) + s(FCH4_pred_Ts, k=20) + s(FCH4_pred_WTD, k=20),
+#              data=sto_day_trans)
+# summary(model)
+
+model <- glm(FCH4_sum ~ FCH4_pred_GPP + FCH4_pred_Ts + FCH4_pred_WTD,
+             data=sto_day_trans)
+summary(model)
+
+semPaths(model, 'std', layout = 'circle')
+
+# plot(ggeffects::ggpredict(model), facets = TRUE)
+
+#calculate McFadden's R-squared for model
+with(summary(model), 1 - deviance/null.deviance)
+
+plot(sto_day_trans$FCH4_sum, predict(update(model, na.action="na.exclude")))
+abline(0,1)
+
+plot(sto_day_trans$FCH4_sum)
+points(predict(update(model, na.action="na.exclude")), col="red", pch=15, cex=0.5)
+
+
+#
+library(lavaanPlot)
+# path model
+model <- 'FCH4_sum ~ FCH4_pred_GPP + FCH4_pred_Ts + FCH4_pred_WTD'
+
+
+fit1 <- sem(model, data = sto_day_trans)
+#labels1 <- list(mpg = "Miles Per Gallon", cyl = "Cylinders", disp = "Displacement", hp = "Horsepower", qsec = "Speed", wt = "Weight") #define labels
+lavaanPlot(model = fit1,  coefs = TRUE, stand = TRUE, sig = 0.05) #standardized regression paths, showing only paths with p<= .05
