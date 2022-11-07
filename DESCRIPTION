@@ -28,7 +28,7 @@ Imports:
     lazyeval,
     REddyProc,
     hms,
-    stringr
+    stringr,
     purrr,
     scales,
     ggcorrplot,
