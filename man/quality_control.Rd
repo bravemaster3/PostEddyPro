@@ -2,10 +2,11 @@
 % Please edit documentation in R/quality_control.R
 \name{quality_control}
 \alias{quality_control}
-\title{Title}
+\title{Perform quality check and quality control (supported are Mauden and Foken flags filtering, RSSI and U star filtering)}
 \usage{
 quality_control(
   fluxes_meteo,
+  gas = "ch4",
   mauden_flag = c(1, 2),
   hard_flags = TRUE,
   limit_lower = -0.1,
@@ -20,6 +21,8 @@ quality_control(
 }
 \arguments{
 \item{fluxes_meteo}{dataframe containing fluxes and biomet data}
+
+\item{gas}{gas name as denoted in Eddypro (e.g. "ch4" or "co2",includes also non gas like LE)}
 
 \item{mauden_flag}{vector, default c(1,2) for qc values to flag out. Recommended practice is to keep 0 as good data, and flag out 2 only if dealing with annual budgets, and flag both 1 and 2 if looking at high frequency data}
 
@@ -45,5 +48,5 @@ quality_control(
 a dataframe having some additional columns, with the flux column suffixed by "_final" being the quality checked flux values
 }
 \description{
-Title
+Perform quality check and quality control (supported are Mauden and Foken flags filtering, RSSI and U star filtering)
 }

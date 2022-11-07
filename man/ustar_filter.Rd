@@ -6,6 +6,7 @@
 \usage{
 ustar_filter(
   fluxes_meteo,
+  gas,
   Temp_col = "Ts",
   number_Temp_classes = 6,
   number_ustar_classes = 20,
@@ -14,6 +15,8 @@ ustar_filter(
 }
 \arguments{
 \item{fluxes_meteo}{dataframe containing both fluxes and soil/air temperature data}
+
+\item{gas}{gas name as denoted in Eddypro (e.g. "ch4" or "co2",includes also non gas like LE)}
 
 \item{Temp_col}{temperature column}
 

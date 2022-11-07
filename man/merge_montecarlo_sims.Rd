@@ -5,6 +5,7 @@
 \title{merge all gapfilled montecarlo simulations into a single file}
 \usage{
 merge_montecarlo_sims(
+  gf_type = "rf",
   dir,
   saving_dir,
   datetime1 = "datetime",
@@ -12,6 +13,8 @@ merge_montecarlo_sims(
 )
 }
 \arguments{
+\item{gf_type}{the type of gapfilling performed on the montecarlo simulations. Possible values are only "rf" or "REddyProc", which determine how to read the files}
+
 \item{dir}{folder containing only the individual files to be merged}
 
 \item{saving_dir}{folder where the merged file will be saved}

@@ -1,0 +1,2 @@
+vis_list_hals <- visualization(check_path_EC = FALSE,
+                               path_biomet = "D:/EC/Data_organized/Halsingfors/Biomet_gf/hals_met.csv")

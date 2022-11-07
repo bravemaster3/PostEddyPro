@@ -1,0 +1,87 @@
+
+
+library(REddyProc)
+library(jmuOutlier)
+rm(list=ls(all=TRUE))
+
+#i=1 #turn on for testing
+ipf <- "C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output/Halsingfors_for_ReddyProc_h2o.txt" #update the file path and file name accordingly
+EddyData.F <- fLoadTXTIntoDataframe(ipf)
+
+#+++ If not provided, calculate VPD from Tair and rH
+# EddyData.F <- cbind(EddyData.F,VPD=fCalcVPDfromRHandTair(EddyData.F$rH, EddyData.F$Tair))
+
+#+++ Add time stamp in POSIX time format
+EddyDataWithPosix.F <- fConvertTimeToPosix(EddyData.F, 'YDH', Year='Year', Day='DoY', Hour='Hour')
+
+#+++ Initalize R5 reference class sEddyProc for processing of eddy data
+#+++ with all variables needed for processing later
+EddyProc.C <- sEddyProc$new('EQTP', EddyDataWithPosix.F, c('H2O','Rg','Tair','VPD')) #change 'NEE' to other variable names if gapfilling other fluxes (have to match the variable name in the input data file)
+#EddyProc.C <- sEddyProc$new('EQTP', EddyDataWithPosix.F, c('LE','Rg','Tair','VPD')) #change 'NEE' to other variable names if gapfilling other fluxes (have to match the variable name in the input data file)
+EddyProc.C$sSetLocationInfo(LatDeg=64.15958801, LongDeg=19.55142097, TimeZoneHour=1)  #Location of Halsingfors
+
+#+++ Fill gaps in variables with MDS gap filling algorithm (without prior ustar filtering)
+EddyProc.C$sMDSGapFill('Tair', FillAll=FALSE)  	# Gap-filled Tair needed for partitioning and gapfilling
+EddyProc.C$sMDSGapFill('VPD', FillAll=FALSE)  	# Gap-filled VPD needed for gapfilling
+EddyProc.C$sMDSGapFill('Rg', FillAll=FALSE)     #Fill only the gaps for the meteo condition, e.g. 'Rg'
+EddyProc.C$sMDSGapFill('H2O', FillAll=TRUE)     #Fill all values to estimate flux uncertainties
+
+# EddyProc.C$sMDSGapFill('LE', FillAll=TRUE)     #Fill all values to estimate flux uncertainties
+
+
+# #+++ Partition NEE into GPP and respiration
+# EddyProc.C$sMRFluxPartition()	# night time partitioning -> Reco, GPP
+
+#+++ Export gap filled and partitioned data to standard data frame
+FilledEddyData.F <- EddyProc.C$sExportResults()
+
+#+++ Save results into (tab-delimited) text file in directory
+CombinedData.F <- cbind(EddyData.F, FilledEddyData.F)
+
+#+++ May rename variables to correspond to Ameriflux 
+colnames(CombinedDataAmeriflux.F <- renameVariablesInDataframe(CombinedData.F, getBGC05ToAmerifluxVariableNameMapping() ))
+CombinedDataAmeriflux.F$TIMESTAMP_END <- POSIXctToBerkeleyJulianDate( EddyProc.C$sExportData()[[1]] )
+head(tmp <- BerkeleyJulianDateToPOSIXct( CombinedDataAmeriflux.F$TIMESTAMP_END ))
+colnames(tmp <- renameVariablesInDataframe(CombinedData.F, getAmerifluxToBGC05VariableNameMapping() ))
+
+#opf <- paste0("EQTP_output_sim",toString(i),".txt") #update the output file name
+fWriteDataframeToFile(CombinedData.F, "Halsingfors_ReddyProc_GF_H2O.txt", "C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output") #update the output file path
+
+# #+++ Example plots of filled data to screen or to directory /plots
+EddyProc.C$sPlotFingerprintY('H2O_f', Year=2021) #gapfilled NEE fingerprint, update the year accordingly
+
+plot(CombinedData.F$H2O_f)
+
+##Checking residuals and getting the sigma for monte carlo
+
+headers <- colnames(fread("C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output/Halsingfors_ReddyProc_GF_H2O.txt"))
+hals_df <- fread("C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output/Halsingfors_ReddyProc_GF_H2O.txt", skip = 2, header = F)
+names(hals_df) <- headers
+
+hals_df <- as.data.frame(hals_df)
+hals_df[hals_df== -9999] <- NA
+hals_df$residuals <- hals_df$H2O_fall - hals_df$H2O
+
+
+mean <- mean(hals_df$residuals,na.rm=TRUE)
+median <- median(hals_df$residuals,na.rm=TRUE)
+sigma <- mean(abs(hals_df$residuals-median), na.rm=TRUE) #https://stats.stackexchange.com/questions/281682/how-to-fit-a-data-against-a-laplace-double-exponential-distribution-and-check?fbclid=IwAR19u5jiNeW4KvokCBToA4_io2tJXbihm0BLP4gYgDvIdc0HnVFuNyw9Mhc
+sigma2 <- sd(hals_df$residuals, na.rm=TRUE)
+
+hist(hals_df$residuals, breaks = 100, freq = F)
+curve(dlaplace(x, mean=0,sd=sigma*sqrt(2)), col = "red", add = TRUE)
+
+# hist(hals_df$residuals, breaks = 100, freq = F)
+# curve(dlaplace(x, mean=0,sd=sigma2), col = "red", add = TRUE)
+
+laplace <- function(x,m=0,t=1) exp(-abs(x-m)/t )/2/t #F
+
+
+hist(hals_df$residuals, breaks = 100, freq = F)
+
+curve(laplace(x,m=0,t=sigma), col = "red", add = TRUE)
+
+
+#SIGMA IS THE ONE WE WILL USE IN MATLAB. The mean is 0
+sigma*sqrt(2) #0.3224342 (sigma*sqrt(2) and not the what I called here sigma itself is the estimator of the standard deviation)
+#In fact, the variance of a laplace distribution is 2*t² in the personalized function laplace defined above

@@ -1,0 +1,124 @@
+#Let's start from the combined flux-meteo (meteo gapfilled) file
+
+library(lubridate)
+library(data.table)
+
+functions <- 'C:/BRAVE/slu/eddy_covariance/myphd/R_codes/COMMON/functions.R'
+source(functions)
+
+setwd("C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output")
+# fluxes_meteo <- read.table("Halsingfors_2020_12_02_meteo_GF.csv", sep=",", header = T)
+halsingfors <- read.table("Halsingfors_period2_2022-04-25_QC_meteo_GF2.csv", sep=",", header = T)
+halsingfors$datetime <- as.POSIXct(halsingfors$datetime, format="%Y-%m-%d %H:%M",tz="UTC")
+halsingfors$date <-as.Date(halsingfors$datetime)
+
+#Adding the storage term
+halsingfors$co2_flux_final <- halsingfors$co2_flux+halsingfors$co2_strg
+
+halsingfors$co2_flux_final[which(halsingfors$qc_co2_flux != 0)] <- NA
+
+#original gaps
+original_datacoverage <- 100 * length(halsingfors$co2_flux_final[which(!is.na(halsingfors$co2_flux_final))])/length(halsingfors$co2_flux_final)
+
+halsingfors2 <- halsingfors[which(halsingfors$date>=as.Date("2020-06-07")),]
+original_datacoverage2 <- 100 * length(halsingfors2$co2_flux_final[which(!is.na(halsingfors2$co2_flux_final))])/length(halsingfors2$co2_flux_final)
+
+
+ggplot(halsingfors,aes(datetime,co2_flux_final))+
+           geom_abline(slope=1, intercept = 0, color="red", size=0.1)+
+           geom_point(size=0.1)+
+           theme_bw()
+
+#Additional u star filtering
+source("C:/BRAVE/slu/eddy_covariance/myphd/R_codes/halsingfors_for_Marcus/new_flow/CO2/1.2.halsingfors_qa_qc_ustar_co2.R")
+ustar_threshold 
+halsingfors$flag_ustar_co2
+halsingfors$co2_flux_final[which(halsingfors$flag_ustar_co2==1)] <- NA
+
+
+
+##############################################
+#Percentage of gaps
+remaining_good_datacoverage <- 100*length(halsingfors$co2_flux_final[which(!is.na(halsingfors$co2_flux_final))])/length(halsingfors$co2_flux_final)
+
+original_datacoverage
+remaining_good_datacoverage
+###########################################################################
+#END OF Quality screening
+###########################################################################
+
+
+median <- median(halsingfors$co2_flux_final, na.rm = T)
+mean <- mean(halsingfors$co2_flux_final, na.rm = T)
+stdev <- sd(halsingfors$co2_flux_final, na.rm = T)
+paste("u* threshold: ", ustar_threshold, sep="")
+paste("median: ", median, sep ="")
+paste("mean: ", mean, sep ="")
+paste("stdev: ", stdev, sep="")
+paste("original_datacoverage: ", round(original_datacoverage,2), "%", sep="")
+paste("remaining_good_datacoverage: ", round(remaining_good_datacoverage,2), "%", sep="")
+
+
+##################NOW selecting only required variables and renaming them for Reddyproc
+
+halsingfors$Year <- year(halsingfors$datetime)
+halsingfors$DoY <- yday(halsingfors$datetime)
+halsingfors$Hour <- hour(halsingfors$datetime) + minute(halsingfors$datetime)/60
+halsingfors$NEE <- halsingfors$co2_flux_final
+halsingfors$Rg <- halsingfors$SWin_f
+halsingfors$Tair <- halsingfors$Ta_f
+halsingfors$Tsoil <- halsingfors$Ts_f
+halsingfors$rH <- halsingfors$RH_f
+halsingfors$VPD <- halsingfors$VPD_f*10 #to convert it to hPa from kPa
+halsingfors$Ustar <- halsingfors$u_star
+
+#removing the rows where met data was not filled
+halsingfors <- halsingfors[which(halsingfors$datetime <= as.POSIXct("2022-04-03 23:30:00", format="%Y-%m-%d %H:%M:%S", tz="UTC")),]
+
+
+####Saving uncertainty info
+halsingfors$rand_err_co2_flux[which(is.na(halsingfors$co2_flux_final))] <- NA
+# halsingfors_err <- halsingfors[,c("datetime","h2o_flux_final","rand_err_h2o_flux")]
+halsingfors_err <- halsingfors[,c("datetime","rand_err_co2_flux")]
+saving_meas_sd_file <- "C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output/Halsingfors_for_ReddyProc_co2_unc.txt"
+fwrite(halsingfors_err, file = saving_meas_sd_file, sep="\t", col.names = TRUE,dateTimeAs = "write.csv")
+
+
+#####
+hals_ReddyProc <- halsingfors[,c("Year","DoY","Hour","NEE","LE","H","Rg","Tair","Tsoil","rH","VPD","Ustar")]
+hals_ReddyProc[is.na(hals_ReddyProc)] <- -9999
+
+headers <- colnames(hals_ReddyProc)
+units <- c("-", "-", "-",	"umolm-2s-1",	"Wm-2",	"Wm-2",	"Wm-2",	"degC",	"degC",	"%", "hPa",	"ms-1")
+
+saving_file_name <- "C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/Halsingfors/Eddypro_output/Halsingfors_for_ReddyProc.txt"
+
+
+#Creating the directory or removing it if it was already there.
+if(file.exists(saving_file_name)) {
+  deletion <- menu(c("Yes, empty it!","No"), graphics = TRUE, title="A file with the same name exists. Delete to continue...")
+  
+  
+  file_check = FALSE
+  if(deletion==1) {
+    unlink(saving_file_name)
+    print("The existing file has been removed")
+    print("The new file will be created")
+    file_check = TRUE
+  }
+  
+  else {
+    print("File writing will be aborted")
+    file_check = FALSE
+  }
+} else file_check = TRUE
+
+
+if(file_check == TRUE) {
+  sink(saving_file_name)
+  cat(cat(headers,sep="\t"),cat("\n"),cat(units, sep="\t"), sep = "\n")
+  sink()
+  fwrite(hals_ReddyProc, file = saving_file_name, sep="\t", append = TRUE, col.names = FALSE)
+}
+
+

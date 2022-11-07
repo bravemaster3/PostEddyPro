@@ -1,0 +1,26 @@
+{
+    "id": "8A30D426",
+    "path": "C:/BRAVE/slu/eddy_covariance/myphd/R_codes/Organized/packages/PostEddyPro/R/rssi_filter.R",
+    "project_path": "R/rssi_filter.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1658245496047.0,
+    "source_on_save": false,
+    "relative_order": 8,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "54,180",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1658249688,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1658249688126,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -31,6 +31,9 @@ rf_gapfiller <- function(site_df, #The dataframe containing all the flux data an
   #Now let's extract only the necessary columns, and make sure there are no missing values. Normally there shouldn't be as I performed a gapfilling of predictors separately!
   df <- stats::na.omit(site_df[,c(datetime,flux_col,preds)])
 
+  time_obj <- df[,datetime]
+  df <- data.frame(df)
+  df[,datetime] <- time_obj
   #Let's train the random forest, in the first step just for a proper tunning to get an optimal mtry value!
   #After that, we'll redo the crossvalidation & training & predictions manually since I would like to save the predictions of
   #each hold-out set during the training, for making plots of the predictive ability of the random forest.

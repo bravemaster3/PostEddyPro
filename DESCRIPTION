@@ -26,6 +26,9 @@ Imports:
     magrittr,
     readr,
     lazyeval,
+    REddyProc,
+    hms,
+    stringr
     purrr,
     scales,
     ggcorrplot,

@@ -1,0 +1,26 @@
+{
+    "id": "AC71D346",
+    "path": "C:/BRAVE/slu/eddy_covariance/myphd/R_codes/halsingfors_for_Marcus/new_flow/H2O/gapfilling_H2O_Reddyproc.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1658505029961.0,
+    "source_on_save": false,
+    "relative_order": 16,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "62,37",
+        "scrollLine": "51"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1654644709,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1654644709,
+    "read_only": false,
+    "read_only_alternatives": []
+}
