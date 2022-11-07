@@ -1,0 +1,21 @@
+#Halmyran
+
+#First visualization
+vis_list <- visualization(path_EC = "D:/EC/Data_organized/Halmyran/Eddypro/Output_final/eddypro_Halmyran_2022_07_07_full_output_2022-07-08T120131_adv.csv",
+              path_biomet = "D:/EC/Data_organized/Halmyran/Biomet_gf/halm_met.csv")
+
+fluxes_meteo <- vis_list$data
+vis_list$graphs
+
+#Quality control
+fluxes_meteo_qc <- quality_control(fluxes_meteo, Temp_col = "Ts")
+
+
+gapfilling_list <- rf_gapfiller(site_df=fluxes_meteo_qc,
+             datetime="datetime",
+             flux_col="ch4_flux_final",
+             preds=c("Ta_f","Ts_f","WTD_f","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta"),
+                         max_mtry = NULL, #This is for trying values of mtry up to the max of either
+                         #sqrt of the number of predictors, or the 1/3rd of the number of predictors
+                         sitename="Halmyran" #This variable is simply for annotating the plots with the site name.
+)

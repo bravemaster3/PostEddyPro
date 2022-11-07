@@ -1,0 +1,4 @@
+keep <- which(halm_day_trans$doy %in% 121:300)
+
+plot(halm_day_trans$FCH4_sum[keep], predict(update(model, na.action="na.exclude"))[keep], pch=16, cex=0.5)
+abline(0,1)

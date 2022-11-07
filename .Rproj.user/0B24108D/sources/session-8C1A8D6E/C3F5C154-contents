@@ -1,0 +1,25 @@
+dat <- data.frame(site = rep(c(NA,8,1), each = 3), score = runif(9))
+as.numeric(factor(dat$site))
+dat$num <- data.table::rleid(dat$site)
+str(dat)
+
+
+df <- df[df$Site=="Stortjarn",]
+df2 <- df
+df2$na_y <- ifelse(is.na(df2[,y_col]), 0, 1)
+df2$bloc <- data.table::rleid(df2$na_y)
+
+g <- ggplot2::ggplot(data=df,ggplot2::aes_string(x = "date",y = y_col, color = "Site"))+
+  ggplot2::geom_point(alpha=0.1)
+g
+
+# i=3
+
+for(i in unique(df2$bloc)){
+ # if(unique(df2[df2$bloc==i & df2$Site=="Stortjarn","na_y"])==1){
+    g <- g + ggplot2::geom_smooth(data = df2[df2$bloc==i & df2$Site=="Stortjarn",],method = "loess", span=0.2)
+    #print(g)
+  #}
+}
+
+g

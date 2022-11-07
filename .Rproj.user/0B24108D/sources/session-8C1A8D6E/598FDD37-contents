@@ -1,0 +1,99 @@
+library(devtools)
+load_all()
+
+############
+#Halmyran
+#############
+
+general_vars <- c("datetime","Ta_f", "Ts_f", "WTD_f", "PARin_f", "Ts1","Ts2","Ts3","Ts4","Ts5")
+
+gapfilling_list_halm <- readRDS("D:/EC/Data_organized/Halmyran/FINAL/gf_rds.RDS")
+
+gapfilling_list_halm$site_df[gapfilling_list_halm$site_df$PARin_f<0,"PARin_f"] <- 0
+
+aggr_vars <- c("hour","day","week","month","year","growing_season")
+
+# halm_met_aggr <- biomet_aggregator(df=gapfilling_list_halm$site_df,
+#                                    datetime="datetime",
+#                                    biomet_vars=c("Ta_f", "Ts_f", "WTD_f", "PARin_f", "SNOWd"),
+#                                    aggr_fun=c("mean","mean","mean","sum","mean"),
+#                                    aggr_var=c("hour"))
+halm_met_aggr <- lapply(aggr_vars, FUN=biomet_aggregator,
+                        df=gapfilling_list_halm$site_df,
+                        datetime="datetime",
+                        biomet_vars=c("Ta_f", "Ts_f", "WTD_f", "PARin_f", "SNOWd", "Ts1","Ts2","Ts3","Ts4","Ts5"),
+                        aggr_fun=c("mean","mean","mean","mean","mean","mean","mean","mean","mean","mean"),
+                        na.rm=TRUE)
+
+names(halm_met_aggr) <- aggr_vars
+
+halm_met_aggr$halfhour <- gapfilling_list_halm$site_df[,general_vars]
+saveRDS(halm_met_aggr, "D:/EC/Data_organized/Halmyran/FINAL/aggr_biomet.RDS")
+
+
+############
+#Degero
+#############
+
+gapfilling_list_deg <- readRDS("D:/EC/Data_organized/Degero/FINAL/gf_rds.RDS")
+
+gapfilling_list_deg$site_df[gapfilling_list_deg$site_df$PARin_f<0,"PARin_f"] <- 0
+
+aggr_vars <- c("hour","day","week","month","year","growing_season")
+
+deg_met_aggr <- lapply(aggr_vars, FUN=biomet_aggregator,
+                        df=gapfilling_list_deg$site_df,
+                        datetime="datetime",
+                        biomet_vars=c("Ta_f", "Ts_f", "WTD_f", "PARin_f", "Ts1","Ts2","Ts3","Ts4","Ts5"),
+                        aggr_fun=c("mean","mean","mean","mean", "mean","mean","mean","mean","mean"),
+                        na.rm=TRUE)
+
+names(deg_met_aggr) <- aggr_vars
+deg_met_aggr$halfhour <- gapfilling_list_deg$site_df[,general_vars]
+saveRDS(deg_met_aggr, "D:/EC/Data_organized/Degero/FINAL/aggr_biomet.RDS")
+
+
+############
+#Stortjarn
+#############
+
+gapfilling_list_sto <- readRDS("D:/EC/Data_organized/Stortjarn/FINAL/gf_rds.RDS")
+
+gapfilling_list_sto$site_df[gapfilling_list_sto$site_df$PARin_f<0,"PARin_f"] <- 0
+
+aggr_vars <- c("hour","day","week","month","year","growing_season")
+
+sto_met_aggr <- lapply(aggr_vars, FUN=biomet_aggregator,
+                       df=gapfilling_list_sto$site_df,
+                       datetime="datetime",
+                       biomet_vars=c("Ta_f", "Ts_f", "WTD_f", "PARin_f", "SNOWd", "Ts1","Ts2","Ts3","Ts4","Ts5"),
+                       aggr_fun=c("mean","mean","mean","mean","mean",  "mean","mean","mean","mean","mean"),
+                       na.rm=TRUE)
+
+names(sto_met_aggr) <- aggr_vars
+sto_met_aggr$halfhour <- gapfilling_list_sto$site_df[,general_vars]
+saveRDS(sto_met_aggr, "D:/EC/Data_organized/Stortjarn/FINAL/aggr_biomet.RDS")
+
+
+
+############
+#Halsingfors
+#############
+
+gapfilling_list_hals <- readRDS("D:/EC/Data_organized/Halsingfors/FINAL/gf_rds.RDS")
+
+gapfilling_list_hals$site_df[gapfilling_list_hals$site_df$PARin_f<0,"PARin_f"] <- 0
+
+aggr_vars <- c("hour","day","week","month","year","growing_season")
+
+hals_met_aggr <- lapply(aggr_vars, FUN=biomet_aggregator,
+                       df=gapfilling_list_hals$site_df,
+                       datetime="datetime",
+                       biomet_vars=c("Ta_f", "Ts_f", "WTD_f", "PARin_f", "SNOWd", "Ts1","Ts2","Ts3","Ts4","Ts5"),
+                       aggr_fun=c("mean","mean","mean","mean","mean", "mean","mean","mean","mean","mean"),
+                       na.rm=TRUE)
+
+names(hals_met_aggr) <- aggr_vars
+hals_met_aggr$halfhour <- gapfilling_list_hals$site_df[,general_vars]
+saveRDS(hals_met_aggr, "D:/EC/Data_organized/Halsingfors/FINAL/aggr_biomet.RDS")
+

@@ -1,0 +1,2196 @@
+library(tidyverse)
+library(dplyr)
+
+#In this, I will my PARin data, because it doesn't seem different from Joss' data
+#I will keep my P data because I already corrected Degero P
+
+##############################Defining the time frame for each site.
+
+deg_start = as.POSIXct("2020-04-01 00:00:00",format="%Y-%m-%d %H:%M:%S",tz="UTC")
+deg_end = as.POSIXct("2021-01-01 00:00:00",format="%Y-%m-%d %H:%M:%S",tz="UTC")
+
+halm_start = as.POSIXct("2020-04-01 00:00:00",format="%Y-%m-%d %H:%M:%S",tz="UTC")
+halm_end = as.POSIXct("2021-01-01 00:00:00",format="%Y-%m-%d %H:%M:%S",tz="UTC")
+
+sto_start = as.POSIXct("2020-05-01 00:00:00",format="%Y-%m-%d %H:%M:%S",tz="UTC")
+sto_end = as.POSIXct("2021-01-01 00:00:00",format="%Y-%m-%d %H:%M:%S",tz="UTC")
+
+hals_start = as.POSIXct("2020-06-11 00:00:00",format="%Y-%m-%d %H:%M:%S",tz="UTC")
+hals_end = as.POSIXct("2021-01-01 00:00:00",format="%Y-%m-%d %H:%M:%S",tz="UTC")
+
+##############################Reading data from all sites and selecting relevant variables.
+
+#Degerö
+deg <- read.table("D:/slu/eddy_covariance/myphd/For_Kofi_copy_&_delete/Degero/Degero_processed/exploring_results/gapf_meteo/Degero_2021_03_09_fluxes_GF_2.csv", sep=",", header = T)
+deg_GPP <- read.table("D:/slu/eddy_covariance/myphd/For_Kofi_copy_&_delete/common/all_GPP/GPP_Deg.csv", sep=",", header = T) %>% 
+  select(-c(PARin, P))
+deg_GPP$datetime <- as.POSIXct(paste(deg_GPP$datetime,"00:00:00"), format="%d-%b-%Y %H:%M:%S",tz="UTC")
+deg_GPP <- deg_GPP[-1,]
+# str(deg)
+deg$Pa_f <- deg$Pa_f/100 # correcting Pa from Pa to hPa
+deg <- deg %>%
+  mutate(datetime=as.POSIXct(datetime, format="%Y-%m-%d %H:%M:%S",tz="UTC")) %>%
+  select(datetime,date,ch4_flux_final,ch4_flux_final_filled,
+         Ta_f,Ts_f,Ts2_f,Ts10_f,Ts15_f,Ts30_f,Ts50_f,Pa_f,u_rot_f,WTD_f,PARin_f,PARout_f,PARin_out,
+         SWin_f,SWout_f,SWin_out,RH_f,VPD_f,P_f) %>%
+  rename_at(vars(c("ch4_flux_final","ch4_flux_final_filled","Ta_f","Ts_f","Ts2_f","Ts10_f","Ts15_f","Ts30_f","Ts50_f","Pa_f",
+                   "u_rot_f","WTD_f","PARin_f","PARout_f","SWin_f","SWout_f","RH_f",
+                   "VPD_f","P_f")),
+            ~c("CH4_flux","CH4_flux_gf","Ta","Ts","Ts2","Ts10","Ts15","Ts30","Ts50","Pa",
+               "u_rot","WTD","PARin","PARout","SWin","SWout","RH","VPD","P")) %>%
+  left_join(deg_GPP, by="datetime") %>%
+  mutate(Site="Degerö") #%>%
+  #filter(datetime >= deg_start & datetime <= deg_end)
+
+#Halmyran
+halm <- read.table("D:/slu/eddy_covariance/myphd/For_Kofi_copy_&_delete/Halmyran/halmyran_processed/exploring_results/gapf_meteo/Halmyran_2021_02_05_fluxes_GF_2.csv", sep=",", header = T)
+halm_GPP <- read.table("D:/slu/eddy_covariance/myphd/For_Kofi_copy_&_delete/common/all_GPP/GPP_Halm.csv", sep=",", header = T) %>% 
+  select(-c(PARin, P))
+halm_GPP$datetime <- as.POSIXct(paste(halm_GPP$datetime,"00:00:00"), format="%d-%b-%Y %H:%M:%S",tz="UTC")
+halm_GPP <- halm_GPP[-1,]
+
+halm$Pa_f <- halm$Pa_f/100 # correcting Pa from Pa to hPa
+halm <- halm %>%
+  mutate(datetime=as.POSIXct(datetime, format="%Y-%m-%d %H:%M:%S",tz="UTC")) %>%
+  select(datetime,date,ch4_flux_final,ch4_flux_final_filled,
+         Ta_f,Ts_f,Ts2_f,Ts10_f,Ts15_f,Ts30_f,Ts50_f,Pa_f,u_rot_f,WTD_f,PARin_f,PARout_f,PARin_out,
+         SWin_f,SWout_f,SWin_out,P_f,RH_f,VPD_f) %>%
+  rename_at(vars(c("ch4_flux_final","ch4_flux_final_filled","Ta_f","Ts_f","Ts2_f","Ts10_f","Ts15_f","Ts30_f","Ts50_f","Pa_f",
+                   "u_rot_f","WTD_f","PARin_f","PARout_f","SWin_f","SWout_f","P_f","RH_f","VPD_f")),
+            ~c("CH4_flux","CH4_flux_gf","Ta","Ts","Ts2","Ts10","Ts15","Ts30","Ts50","Pa",
+               "u_rot","WTD","PARin","PARout","SWin","SWout","P","RH","VPD"))%>%
+  left_join(halm_GPP, by="datetime") %>%
+  mutate(Site="Hålmyran") #%>%
+  #filter(datetime >= halm_start & datetime <= halm_end)
+
+#stortjarn
+sto <- read.table("D:/slu/eddy_covariance/myphd/For_Kofi_copy_&_delete/Stortjarn/pre_processed/exploring_results/gapf_meteo/Stortjarn_2021_02_05_fluxes_GF_2.csv", sep=",", header = T)
+sto_GPP <- read.table("D:/slu/eddy_covariance/myphd/For_Kofi_copy_&_delete/common/all_GPP/GPP_Sto.csv", sep=",", header = T) %>% 
+  select(-c(PARin, P))
+sto_GPP$datetime <- as.POSIXct(paste(sto_GPP$datetime,"00:00:00"), format="%d-%b-%Y %H:%M:%S",tz="UTC")
+sto_GPP <- sto_GPP[-1,]
+
+sto$Pa_f <- sto$Pa_f/100 # correcting Pa from Pa to hPa
+sto <- sto %>%
+  mutate(datetime=as.POSIXct(datetime, format="%Y-%m-%d %H:%M:%S",tz="UTC")) %>%
+  select(datetime,date,ch4_flux_final,ch4_flux_final_filled,
+         Ta_f,Ts_f,Ts2_f,Ts10_f,Ts15_f,Ts30_f,Ts50_f,Pa_f,u_rot_f,WTD_f,PARin_f,PARout_f,PARin_out,
+         SWin_f,SWout_f,SWin_out,P_f,RH_f,VPD_f) %>%
+  rename_at(vars(c("ch4_flux_final","ch4_flux_final_filled","Ta_f","Ts_f","Ts2_f","Ts10_f","Ts15_f","Ts30_f","Ts50_f","Pa_f",
+                   "u_rot_f","WTD_f","PARin_f","PARout_f","SWin_f","SWout_f","P_f","RH_f","VPD_f")),
+            ~c("CH4_flux","CH4_flux_gf","Ta","Ts","Ts2","Ts10","Ts15","Ts30","Ts50","Pa",
+               "u_rot","WTD","PARin","PARout","SWin","SWout","P","RH","VPD"))%>%
+  left_join(sto_GPP, by="datetime") %>%
+  mutate(Site="Stortjarn") #%>%
+  #filter(datetime >= sto_start & datetime <= sto_end)
+
+#Halsingfors
+hals <- read.table("D:/slu/eddy_covariance/myphd/For_Kofi_copy_&_delete/Halsingfors/pre_processed/exploring_results/FINAL_RUNS/gapf_meteo/Halsingfors_2021_02_26_fluxes_GF_2.csv", sep=",", header = T)
+hals_GPP <- read.table("D:/slu/eddy_covariance/myphd/For_Kofi_copy_&_delete/common/all_GPP/GPP_Hals.csv", sep=",", header = T) %>% 
+  select(-c(PARin, P))
+hals_GPP$datetime <- as.POSIXct(paste(hals_GPP$datetime,"00:00:00"), format="%d-%b-%Y %H:%M:%S",tz="UTC")
+hals_GPP <- hals_GPP[-1,]
+
+hals$Pa_f <- hals$Pa_f/100 # correcting Pa from Pa to hPa
+hals <- hals %>%
+  mutate(datetime=as.POSIXct(datetime, format="%Y-%m-%d %H:%M:%S",tz="UTC")) %>%
+  select(datetime,date,ch4_flux_final,ch4_flux_final_filled,
+         Ta_f,Ts_f,Ts2_f,Ts10_f,Ts15_f,Ts30_f,Ts50_f,Pa_f,u_rot_f,WTD_f,PARin_f,PARout_f,PARin_out,
+         SWin_f,SWout_f,SWin_out,P_f,RH_f,VPD_f) %>%
+  rename_at(vars(c("ch4_flux_final","ch4_flux_final_filled","Ta_f","Ts_f","Ts2_f","Ts10_f","Ts15_f","Ts30_f","Ts50_f","Pa_f",
+                   "u_rot_f","WTD_f","PARin_f","PARout_f","SWin_f","SWout_f","P_f","RH_f","VPD_f")),
+            ~c("CH4_flux","CH4_flux_gf","Ta","Ts","Ts2","Ts10","Ts15","Ts30","Ts50","Pa",
+               "u_rot","WTD","PARin","PARout","SWin","SWout","P","RH","VPD"))%>%
+  left_join(hals_GPP, by="datetime") %>%
+  mutate(Site="Hälsingfors") #%>%
+  #filter(datetime >= hals_start & datetime <= hals_end)
+
+#################################Merging all dataframes into a single dataframe
+methane <- Reduce(f = function(x,y) merge(x,y,all=T),list(deg,halm,sto,hals))
+View(methane)
+methane$datetime <- as.POSIXct(methane$datetime, format="%Y-%m-%d %H:%M",tz="UTC")
+methane$date <- as.Date(methane$datetime)
+methane$month <- as.numeric(format(methane$date, format="%m"))
+
+# start_datetime <- max(min(methane$datetime[methane$Site=="Hålmyran"]),min(methane$datetime[methane$Site=="Degerö"]),
+#                       min(methane$datetime[methane$Site=="Stortjarn"]),min(methane$datetime[methane$Site=="Hälsingfors"]))
+# end_datetime <- min(max(methane$datetime[methane$Site=="Hålmyran"]),max(methane$datetime[methane$Site=="Degerö"]),
+#                     max(methane$datetime[methane$Site=="Stortjarn"]),max(methane$datetime[methane$Site=="Hälsingfors"]))
+
+#methane <- methane[methane$datetime>=start_datetime & methane$datetime<end_datetime,]
+
+#converting fluxes to mg per 30min from micromol
+methane$CH4_flux <- 10^-6 * 16.04 * 10^3 * 60 * 30 * methane$CH4_flux 
+methane$CH4_flux_gf <- 10^-6 * 16.04 * 10^3 * 60 * 30 * methane$CH4_flux_gf
+# methane$quality <- NA
+methane <- methane %>%
+  mutate(quality = ifelse(!is.na(CH4_flux),"original","gapfilled"))
+
+methane_full <- methane #copy needed later for plotting only environmental variables
+methane <- methane %>% filter((Site=="Degerö" & datetime >= deg_start & datetime <= deg_end) |
+                              (Site=="Hålmyran" & datetime >= halm_start & datetime <= halm_end) |
+                              (Site=="Hälsingfors" & datetime >= hals_start & datetime <= hals_end) |
+                              (Site=="Stortjarn" & datetime >= sto_start & datetime <= sto_end))
+
+
+methane_pivotlonger <- methane %>% 
+  select(-c("quality")) %>%
+  rename_at(vars(c("CH4_flux","CH4_flux_gf")),~c("original","gapfilled")) %>%
+  pivot_longer(cols = c("original","gapfilled"),values_to="CH4_flux",names_to="quality")
+
+
+methane_full_pivotlonger <- methane_full %>% 
+  select(-c("quality")) %>%
+  rename_at(vars(c("CH4_flux","CH4_flux_gf")),~c("original","gapfilled")) %>%
+  pivot_longer(cols = c("original","gapfilled"),values_to="CH4_flux",names_to="quality")
+
+##################################Descriptive statistics
+#summarizing for the report
+as.data.frame(methane %>% 
+                select(-c("datetime","quality")) %>%
+                group_by(.dots=c("Site")) %>%
+                summarise_at(vars(CH4_flux,CH4_flux_gf,Ta,Ts,WTD,Pa), mean, na.rm = TRUE))
+
+as.data.frame(methane %>% 
+                select(-c("datetime","quality")) %>%
+                group_by(.dots=c("Site")) %>%
+                summarise_at(vars(CH4_flux,CH4_flux_gf), median, na.rm = TRUE))
+
+as.data.frame(methane %>% 
+                select(-c("datetime","quality")) %>%
+                group_by(.dots=c("Site")) %>%
+                summarise_at(vars(CH4_flux,CH4_flux_gf), sd, na.rm = TRUE))
+
+
+as.data.frame(methane %>% 
+                select(-c("datetime","quality")) %>%
+                group_by(.dots=c("Site")) %>%
+                summarise_at(vars(CH4_flux,CH4_flux_gf,Ta,Ts,WTD,Pa,P), mean, na.rm = TRUE))
+
+
+as.data.frame(methane %>% 
+                select(-c("datetime","quality")) %>%
+                group_by(.dots=c("Site")) %>%
+                summarise(quantile = scales::percent(c(0.1, 0.9)),
+                          CH4_flux = quantile(CH4_flux, c(0.1, 0.9),na.rm=T),
+                          CH4_flux_gf = quantile(CH4_flux_gf, c(0.1, 0.9))) %>%
+                pivot_wider(names_from=c(quantile),values_from=c(CH4_flux,CH4_flux_gf))
+)
+
+##############################
+#daily sums
+methane_daily_sum <- methane %>% 
+  select(-c("datetime","quality")) %>%
+  group_by(.dots=c("Site","date")) %>%
+  #mutate(CH4_flux=CH4_flux*60*30,CH4_flux_gf=CH4_flux_gf*60*30) %>% #converts per seconds to per 30 minutes removed now because it is already included in the new unit
+  summarise(across(where(is.numeric), ~ sum(.x, na.rm = F)))%>% #let's not remove the missing values
+  mutate(WTD=WTD/48,
+         Pa=Pa/48,
+         Ta=Ta/48,
+         Ts=Ts/48,
+         Ts2=Ts2/48,
+         Ts10=Ts10/48,
+         Ts15=Ts15/48,
+         Ts30=Ts30/48,
+         Ts50=Ts50/48,
+         RH=RH/48,
+         VPD=VPD/48,
+         doy=lubridate::yday(date))
+
+#daily sums
+methane_full_daily_sum <- methane_full %>% 
+  select(-c("datetime","quality")) %>%
+  group_by(.dots=c("Site","date")) %>%
+  #mutate(CH4_flux=CH4_flux*60*30,CH4_flux_gf=CH4_flux_gf*60*30) %>% #converts per seconds to per 30 minutes removed now because it is already included in the new unit
+  summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE)))%>%
+  mutate(WTD=WTD/48,
+         Pa=Pa/48,
+         Ta=Ta/48,
+         Ts=Ts/48,
+         Ts2=Ts2/48,
+         Ts10=Ts10/48,
+         Ts15=Ts15/48,
+         Ts30=Ts30/48,
+         Ts50=Ts50/48,
+         RH=RH/48,
+         VPD=VPD/48,
+         doy=lubridate::yday(date))
+
+View(methane_daily_sum)
+
+#daily means & sd
+methane_daily_mean <- methane %>% 
+  select(-c("datetime","quality")) %>%
+  group_by(.dots=c("Site","date")) %>%
+  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)))
+
+methane_daily_sd <- methane %>% 
+  select(-c("datetime","quality")) %>%
+  group_by(.dots=c("Site","date")) %>%
+  summarise(across(where(is.numeric), ~ sd(.x, na.rm = TRUE)))
+
+methane_daily_mean_pivotlonger <- methane_daily_mean %>% 
+  select(date,CH4_flux,CH4_flux_gf,Site)%>%
+  rename_at(vars(c("CH4_flux","CH4_flux_gf")),~c("original","gapfilled")) %>%
+  pivot_longer(cols = c("original","gapfilled"),values_to="CH4_flux",names_to="quality")
+
+methane_daily_sd_pivotlonger <- methane_daily_sd %>% 
+  select(date,CH4_flux,CH4_flux_gf,Site)%>%
+  rename_at(vars(c("CH4_flux","CH4_flux_gf")),~c("original","gapfilled")) %>%
+  pivot_longer(cols = c("original","gapfilled"),values_to="CH4_flux_sd",names_to="quality")
+
+methane_daily_pivotlonger <- Reduce(f = function(x,y) merge(x,y,all=T),list(methane_daily_mean_pivotlonger,methane_daily_sd_pivotlonger))
+#scaling the means to sum
+methane_daily_pivotlonger$CH4_flux <- methane_daily_pivotlonger$CH4_flux*48
+methane_daily_pivotlonger$CH4_flux_sd <- methane_daily_pivotlonger$CH4_flux_sd*48
+
+#monthly sum
+methane_monthly_sum <- methane %>% 
+  select(-c("datetime","date","quality")) %>%
+  group_by(.dots=c("Site","month")) %>%
+  summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE)))
+#View(methane_monthly_sum)
+
+#monthly mean & sd
+methane_monthly_mean <- methane %>% 
+  select(-c("datetime","date","quality")) %>%
+  group_by(.dots=c("Site","month")) %>%
+  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)))
+
+methane_monthly_sd <- methane %>% 
+  select(-c("datetime","date","quality")) %>%
+  group_by(.dots=c("Site","month")) %>%
+  summarise(across(where(is.numeric), ~ sd(.x, na.rm = TRUE)))
+
+
+methane_monthly_mean_pivotlonger <- methane_monthly_mean %>% 
+  #select(month,CH4_flux,CH4_flux_gf,Site)%>%
+  rename_at(vars(c("CH4_flux","CH4_flux_gf")),~c("original","gapfilled")) %>%
+  pivot_longer(cols = c("original","gapfilled"),values_to="CH4_flux",names_to="quality")
+
+methane_monthly_sd_pivotlonger <- methane_monthly_sd %>% 
+  select(month,CH4_flux,CH4_flux_gf,Site)%>%
+  rename_at(vars(c("CH4_flux","CH4_flux_gf")),~c("original","gapfilled")) %>%
+  pivot_longer(cols = c("original","gapfilled"),values_to="CH4_flux_sd",names_to="quality")
+
+methane_monthly_pivotlonger <- Reduce(f = function(x,y) merge(x,y,all=T),list(methane_monthly_mean_pivotlonger,methane_monthly_sd_pivotlonger))
+
+#scaling the means to sum
+methane_monthly_pivotlonger$year <- 2020
+methane_monthly_pivotlonger$ndaysmonth <- lubridate::days_in_month(as.Date(paste(methane_monthly_pivotlonger$year,methane_monthly_pivotlonger$month,"01",sep="-")))
+methane_monthly_pivotlonger$CH4_flux <- methane_monthly_pivotlonger$CH4_flux*48*methane_monthly_pivotlonger$ndaysmonth
+# methane_monthly_pivotlonger$CH4_flux_sd <- methane_monthly_pivotlonger$CH4_flux_sd*48*methane_monthly_pivotlonger$ndaysmonth
+
+
+###################################ANOVA
+#Comparing sites
+# library(scales)
+
+# generic_plotting_function <- function(df=methane_daily_sum,
+#                                       x_var=date,
+#                                       y_var,
+#                                       alpha=0.2,
+#                                       smooth_line=T,
+#                                       span=0.2,
+#                                       xlim,
+#                                       ylim,
+#                                       xlab,
+#                                       ylab
+#                                       )
+
+
+#All sites together methane, halfhourly
+library(ggplot2)
+library(scales)
+ggplot(data=methane,aes(x = datetime,y = CH4_flux_gf,shape=quality,color=quality,size=quality,alpha=quality))+
+  geom_point()+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  # ylim(-10,100)+
+  ylim(-0.2,5)+
+  ylab("CH4 fluxes (mg. m-2. 30min-1)")+#ylab("CH4 fluxes (nmol.m-2.s-1)")+
+  theme_classic()+
+  scale_color_manual(values=c("red","black"))+
+  scale_shape_manual(values=c(16,16))+
+  scale_size_manual(values=c(0.02,0.2))+
+  scale_alpha_manual(values = c(0.5,0.5))+
+  scale_x_datetime(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+
+  theme(legend.position = c(0.4, 0.88), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~ Site)
+#+
+#  theme(legend.position = c(0.4, 0.9), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+#       legend.text=element_text(size=8),legend.title=element_blank(),legend.margin = margin(0,2,0,0),legend.spacing.y = unit(0.01, 'cm'))
+ggsave("D:/graphs/ori_gf_new.png",width = 140, height = 100, unit="mm")
+
+
+#for the course statistical learning
+library(ggplot2)
+library(scales)
+ggplot(data=methane[methane$quality=="original",],aes(x = datetime,y = CH4_flux_gf))+
+  geom_point(alpha=0.5,size=0.2,shape=16,color="black")+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  # ylim(-10,100)+
+  ylim(-0.2,5)+
+  ylab("CH4 fluxes (mg. m-2. 30min-1)")+#ylab("CH4 fluxes (nmol.m-2.s-1)")+
+  theme_classic()+
+  scale_x_datetime(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+
+  theme(legend.position = c(0.4, 0.88), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~ Site)
+
+ggsave("D:/graphs/ori_stat.png",width = 140, height = 100, unit="mm")
+
+#all sites together methane, daily
+g <- ggplot(data=methane_daily_sum,aes(x = date,y = CH4_flux_gf,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  # ylim(-10,150)+
+  ylab("CH4 fluxes (mg. m-2. d-1)")+
+  theme_classic()+
+  # scale_color_manual(values=c("red","black"))+
+  # scale_shape_manual(values=c(16,16))+
+  # scale_size_manual(values=c(0.01,0.5))+
+  # scale_alpha_manual(values = c(1,0.5))+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL.html")
+
+#all sites together GPP
+g <- ggplot(data=methane_daily_sum,aes(x = date,y = GPP_gc,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("GPP (gC. m-2. d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+#library(plotly)
+g
+#ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_GPP.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP.html")
+
+
+#all sites together LE(Latent heat)
+library(plotly)
+g <- ggplot(data=methane_daily_sum,aes(x = date,y = LE_mm,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("LE (mm.d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+
+ggsave("D:/graphs/gf_daily_sum_FULL_LE.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_LE.html")
+
+###################
+
+#all sites together methane with GPP
+g <- ggplot(data=methane_daily_sum,aes(x = GPP_gc,y = CH4_flux_gf,color=Site,label = date))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  xlab("GPP (gC. m-2. d-1)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_GPP_CH4.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4.html")
+
+########
+
+#all sites together methane with GPP no line
+g <- ggplot(data=methane_daily_sum,aes(x = GPP_gc,y = CH4_flux_gf,color=Site,label = date))+
+  geom_point(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("GPP (gC. m-2. d-1)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+
+########
+
+
+#all sites together methane with GPP no line, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = GPP_gc,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("GPP (gC. m-2. d-1)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.06, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_GPP_CH4_FACET.png",width = 140, height = 100, unit="mm")
+ggsave("D:/graphs/gf_daily_sum_FULL_GPP_CH4_FACET_forpaper.png",width = 130, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+########
+#all sites together methane with TER
+g <- ggplot(data=methane_daily_sum,aes(x = TER_gc,y = CH4_flux_gf,color=Site,label = date))+
+  geom_point(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("TER (gC. m-2. d-1)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_TER_CH4_noline.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_TER_CH4_noline.html")
+
+##################
+#all sites together methane with TER no line, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = TER_gc,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("TER (gC. m-2. d-1)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.06, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_TER_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+###################
+
+########
+#all sites together methane with NEE
+g <- ggplot(data=methane_daily_sum,aes(x = NEE_gc,y = CH4_flux_gf,color=Site,label = date))+
+  geom_point(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("NEE (gC. m-2. d-1)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_NEE_CH4_noline.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_NEE_CH4_noline.html")
+
+###################
+#all sites together methane with NEE no line, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = NEE_gc,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("NEE (gC. m-2. d-1)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.06, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_NEE_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+###################
+
+#all sites together methane with WTD
+g <- ggplot(data=methane_daily_sum,aes(x = WTD,y = CH4_flux_gf,color=Site,label = date))+
+  geom_point(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("WTD (cm)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_WTD_CH4.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_WTD_CH4.html")
+
+
+###################
+##all sites together methane with WTD, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = WTD,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("WTD (cm)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.89, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_WTD_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+
+#all sites together methane with WTD GROUPED
+methane_daily_sum$WTD_group <- cut(methane_daily_sum$WTD,
+                                   breaks = c(-Inf,seq(-27.5,2.5, by=5), Inf), labels=c("<-27.5","-25","-20","-15","-10","-5","0", ">2.5" ))
+
+
+
+g <- ggplot(data=methane_daily_sum,aes(x = WTD_group,y = CH4_flux_gf,color=Site,label = date))+
+  geom_boxplot(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("WTD (cm)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+
+ggsave("D:/graphs/gf_daily_sum_FULL_WTD_CH4_category.png",width = 140, height = 100, unit="mm")
+###################
+
+#all sites together methane with Ts
+g <- ggplot(data=methane_daily_sum,aes(x = Ts,y = CH4_flux_gf,color=Site,label = date))+
+  geom_point(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("Ts (°C)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_Ts_CH4.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_Ts_CH4.html")
+
+
+#all sites together methane with Ts GROUPED
+methane_daily_sum$Ts_group <- cut(methane_daily_sum$Ts,
+                                   breaks = c(seq(0,20, by=2), Inf), labels=seq(0,20, by=2),right=F)
+
+
+
+g <- ggplot(data=methane_daily_sum,aes(x = Ts_group,y = CH4_flux_gf,color=Site,label = date))+
+  geom_boxplot(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("Ts (°C)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+
+ggsave("D:/graphs/gf_daily_sum_FULL_Ts_CH4_category.png",width = 140, height = 100, unit="mm")
+
+
+####
+#Attempting some line graph with error bars
+# g <- ggplot(data=unique(methane_daily_sum%>%
+#                           select(c(Site,Ts_group,Site,CH4_flux_gf))%>%
+#                           group_by(Site,Ts_group) %>%
+#                           mutate(CH4_mean=mean(CH4_flux_gf),
+#                                  CH4_sd=sd(CH4_flux_gf)) %>%
+#                           select(Site,CH4_mean,CH4_sd,Ts_group)),aes(x = as.numeric(Ts_group),y = CH4_mean,color=Site))+
+#   geom_line()+
+#   
+#   # geom_smooth(span=0.2)+
+#   xlab("Ts (°C)")+
+#   ylab("CH4 (mg. m-2. d-1)")+
+#   theme_classic()+
+#   theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+#   theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+#         legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+# 
+# g
+
+######################
+#all sites together methane with Ts, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = Ts,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("Ts (°C)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.06, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_Ts_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+####################
+
+#all sites together methane with Ta
+g <- ggplot(data=methane_daily_sum,aes(x = Ta,y = CH4_flux_gf,color=Site,label = date))+
+  geom_point(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("Ta (°C)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_Ta_CH4.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_Ta_CH4.html")
+
+
+####################
+######################
+#all sites together methane with Ta, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = Ta,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("Ta (°C)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.06, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_Ta_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+
+####################
+
+#all sites together methane with Pa
+g <- ggplot(data=methane_daily_sum,aes(x = Pa,y = CH4_flux_gf,color=Site,label = date))+
+  geom_point(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("Pa (hPa)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_Pa_CH4.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_Pa_CH4.html")
+
+
+
+####################
+#all sites together methane with Pa, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = Pa,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("Pa (hPa)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.06, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_Pa_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+####################
+#all sites together methane with VPD, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = VPD,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("VPD (kPa)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.06, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_VPD_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+
+####################
+#all sites together methane with RH, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = RH,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("RH (%)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.06, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_RH_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+####################
+
+####################
+
+#all sites together methane with PaRin_out
+g <- ggplot(data=methane_daily_sum,aes(x = PARin_out,y = CH4_flux_gf,color=Site,label = date))+
+  geom_point(alpha=0.2)+
+  # geom_smooth(span=0.2)+
+  xlab("PARin_out (umol.m-2.d-1)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_PARinout_CH4.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_PARinout_CH4.html")
+
+
+####################
+#all sites together methane with PARin_out, colour with season
+g <- ggplot(data=methane_daily_sum,aes(x = PARin_out,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("PARin-out (umol.m-2.d-1)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.06, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_PARin-out_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+
+####################
+
+#####################
+
+#########METEO VARIABLES ALONE
+
+#all sites together WTD
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = WTD,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("WTD (cm)")+
+  theme_classic()+
+  # scale_color_manual(values=c("red","black"))+
+  # scale_shape_manual(values=c(16,16))+
+  # scale_size_manual(values=c(0.01,0.5))+
+  # scale_alpha_manual(values = c(1,0.5))+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/WTD_all.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/WTD_all.html")
+
+
+#all sites together WTD, no smoothing
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = WTD,color=Site))+
+  geom_line()+
+  #geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("WTD (cm)")+
+  theme_classic()+
+  # scale_color_manual(values=c("red","black"))+
+  # scale_shape_manual(values=c(16,16))+
+  # scale_size_manual(values=c(0.01,0.5))+
+  # scale_alpha_manual(values = c(1,0.5))+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/WTD_all_lines.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/WTD_all_lines.html")
+
+##################
+#all sites together Ts
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("Ts (°C)")+
+  theme_classic()+
+  # scale_color_manual(values=c("red","black"))+
+  # scale_shape_manual(values=c(16,16))+
+  # scale_size_manual(values=c(0.01,0.5))+
+  # scale_alpha_manual(values = c(1,0.5))+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/Ts_all.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/Ts_all.html")
+
+
+###################
+#all sites together Ts lines instead of points, no smoothing
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts,color=Site))+
+  geom_line()+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("Ts (°C)")+
+  theme_classic()+
+  # scale_color_manual(values=c("red","black"))+
+  # scale_shape_manual(values=c(16,16))+
+  # scale_size_manual(values=c(0.01,0.5))+
+  # scale_alpha_manual(values = c(1,0.5))+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/Ts_all_lines.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/Ts_all_lines.html")
+
+
+#all sites together VPD lines instead of points, no smoothing
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = VPD,color=Site))+
+  geom_line()+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("VPD (kPa)")+
+  theme_classic()+
+  # scale_color_manual(values=c("red","black"))+
+  # scale_shape_manual(values=c(16,16))+
+  # scale_size_manual(values=c(0.01,0.5))+
+  # scale_alpha_manual(values = c(1,0.5))+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/VPD_all_lines.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/VPD_all_lines.html")
+
+
+#all sites together RH lines instead of points, no smoothing
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = RH,color=Site))+
+  geom_line()+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("RH (%)")+
+  theme_classic()+
+  # scale_color_manual(values=c("red","black"))+
+  # scale_shape_manual(values=c(16,16))+
+  # scale_size_manual(values=c(0.01,0.5))+
+  # scale_alpha_manual(values = c(1,0.5))+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.2), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/RH_all_lines.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/RH_all_lines.html")
+
+
+###################
+#all sites together Ta
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ta,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("Ta (°C)")+
+  theme_classic()+
+  # scale_color_manual(values=c("red","black"))+
+  # scale_shape_manual(values=c(16,16))+
+  # scale_size_manual(values=c(0.01,0.5))+
+  # scale_alpha_manual(values = c(1,0.5))+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/Ta_all.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/Ta_all.html")
+
+
+###################
+#all sites together Ta lines instead of points, no smoothing
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ta,color=Site))+
+  geom_line()+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("Ta (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/Ta_all_lines.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/Ta_all_lines.html")
+
+###################
+#all sites together PARin lines instead of points, no smoothing
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = PARin,color=Site))+
+  geom_line()+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("PARin (umol.m-2.d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/PARin_all_lines.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/PARin_all_lines.html")
+
+
+###################
+
+#all sites together PARin_out lines instead of points, no smoothing
+g <- ggplot(data=methane_full_daily_sum,aes(x = date,y = PARin_out,color=Site))+
+  geom_line()+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-20,40)+
+  ylab("PARin-out (umol.m-2.d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.8), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+library(plotly)
+g
+ggplotly(g)
+ggsave("D:/graphs/PARin-out_all_lines.png",width = 140, height = 100, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/PARin-out_all_lines.html")
+
+
+###################
+
+########################################################################
+#density plots
+datetime_1 <- as.POSIXct("2020-05-01 00:00:00", format="%Y-%m-%d %H:%M:%S", tz="UTC")
+datetime_2 <- as.POSIXct("2020-06-11 00:00:00", format="%Y-%m-%d %H:%M:%S", tz="UTC")
+
+
+#df for density plot only
+methane_density <- methane %>% 
+  # filter(datetime < end_datetime) %>%
+  mutate(group=ifelse(datetime<datetime_1, "Apr 1 - Apr 30", 
+                      ifelse(datetime<datetime_2,"May 1 - Jun 10","Jun 11 - Dec 31")
+                      ))
+
+methane_density$group <- factor(methane_density$group, levels = c("Apr 1 - Apr 30", "May 1 - Jun 10","Jun 11 - Dec 31"))
+
+
+methane_density_daily <- methane_daily_sum %>% 
+  # filter(date < as.Date(end_datetime)) %>%
+  mutate(group=ifelse(date<as.Date(datetime_1), "Apr 1 - Apr 30", 
+                      ifelse(date<as.Date(datetime_2),"May 1 - Jun 10","Jun 11 - Dec 31")
+  ))
+methane_density_daily$group <- factor(methane_density_daily$group, levels =  c("Apr 1 - Apr 30", "May 1 - Jun 10","Jun 11 - Dec 31"))
+
+#half-hourly All 3 periods
+p <- ggplot(data=methane_density ,aes(x=CH4_flux_gf))+
+  geom_density(aes(color=Site)) +
+  #geom_density(aes(fill = Site), alpha = 0.4) +
+  xlim(c(-0.5,4))+
+  xlab("CH4 fluxes (mg. m-2. 30min-1)")+
+  #scale_color_manual(values = c("#000000","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  #scale_color_manual(values = c("#868686FF","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.89, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))+
+
+  facet_wrap(~group)
+p
+
+ggsave("D:/graphs/dens_gf_30m_full.png",width = 140, height = 80, unit="mm")
+
+
+p <- ggplot(data=methane_density ,aes(x=CH4_flux_gf))+
+  geom_density(aes(color=Site)) +
+  #geom_density(aes(fill = Site), alpha = 0.4) +
+  xlim(c(-0.5,4))+
+  xlab("CH4 fluxes (mg. m-2. 30min-1)")+
+  #scale_color_manual(values = c("#000000","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  #scale_color_manual(values = c("#868686FF","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.88, 0.705), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))+
+  
+  facet_wrap(~group)
+p
+ggsave("D:/graphs/dens_gf_30m_full.png",width = 130, height = 70, unit="mm")
+
+
+#half-hourly 2 periods
+p <- ggplot(data=methane_density[methane_density$group != "Apr 1 - Apr 30",] ,aes(x=CH4_flux_gf))+
+  geom_density(aes(color=Site)) +
+  #geom_density(aes(fill = Site), alpha = 0.4) +
+  xlim(c(-0.5,4))+
+  xlab("CH4 fluxes (mg. m-2. 30min-1)")+
+  #scale_color_manual(values = c("#000000","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  #scale_color_manual(values = c("#868686FF","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.89, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))+
+  
+  facet_wrap(~group)
+p
+
+ggsave("D:/graphs/dens_gf_30m_full_2periods.png",width = 140, height = 80, unit="mm")
+
+######
+#Daily fluxes all 3 periods
+p <- ggplot(data=methane_density_daily,aes(x=CH4_flux_gf))+
+  geom_density(aes(color=Site)) +
+  #geom_density(aes(fill = Site), alpha = 0.4) +
+  xlim(c(-0.5,200))+
+  xlab("CH4 fluxes (mg. m-2. d-1)")+
+  #scale_color_manual(values = c("#000000","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  #scale_color_manual(values = c("#868686FF","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.89, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))+
+  
+  facet_wrap(~group)
+p
+
+ggsave("D:/graphs/dens_gf_daily_full.png",width = 140, height = 80, unit="mm")
+
+#########Daily fluxes only 2 periods
+p <- ggplot(data=methane_density_daily[methane_density_daily$group != "Apr 1 - Apr 30",],aes(x=CH4_flux_gf))+
+  geom_density(aes(color=Site)) +
+  #geom_density(aes(fill = Site), alpha = 0.4) +
+  xlim(c(-0.5,200))+
+  xlab("CH4 fluxes (mg. m-2. d-1)")+
+  #scale_color_manual(values = c("#000000","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  #scale_color_manual(values = c("#868686FF","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.89, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))+
+  
+  facet_wrap(~group)
+p
+
+ggsave("D:/graphs/dens_gf_daily_full_2periods.png",width = 140, height = 80, unit="mm")
+
+
+#############
+#Boxplots
+#Daily fluxes all 3 periods
+p <- ggplot(data=methane_density_daily,aes(x=Site,y=CH4_flux_gf, color=Site))+
+  geom_boxplot() +
+  #geom_density(aes(fill = Site), alpha = 0.4) +
+  #xlim(c(-0.5,200))+
+  ylab("CH4 fluxes (mg. m-2. d-1)")+
+  # #scale_color_manual(values = c("#000000","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  #scale_color_manual(values = c("#868686FF","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  facet_wrap(~group)
+
+p
+
+ggsave("D:/graphs/boxplots_gf_daily_full.png",width = 140, height = 80, unit="mm")
+
+p <- ggplot(data=methane_density_daily,aes(x=Site,y=CH4_flux_gf, color=Site))+
+  geom_boxplot() +
+  #geom_density(aes(fill = Site), alpha = 0.4) +
+  #xlim(c(-0.5,200))+
+  ylab("CH4 fluxes (mg. m-2. d-1)")+
+  # #scale_color_manual(values = c("#000000","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  #scale_color_manual(values = c("#868686FF","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust=1))+
+  facet_wrap(~group)
+
+p
+
+ggsave("D:/graphs/boxplots_gf_daily_full_forpaper.png",width = 130, height = 70, unit="mm")
+
+# p <- ggplot(data=methane_density_daily,aes(x=Site,y=CH4_flux_gf, color=Site))+
+#   geom_boxplot() +
+#   #geom_density(aes(fill = Site), alpha = 0.4) +
+#   #xlim(c(-0.5,200))+
+#   ylab("CH4(mg.m-2.d-1)")+
+#   # #scale_color_manual(values = c("#000000","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+#   #scale_color_manual(values = c("#868686FF","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+#   theme_classic()+
+#   theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+#   theme(legend.position = "none",
+#         axis.text.x = element_text(angle = 45, hjust=1,size=7))+
+#   facet_wrap(~group)
+# 
+# p
+
+ggsave("D:/graphs/boxplots_gf_daily_full.png",width = 150, height = 50, unit="mm")
+
+
+#30min fluxes all 3 periods
+p <- ggplot(data=methane_density,aes(x=Site,y=CH4_flux_gf, color=Site))+
+  geom_boxplot() +
+  #geom_density(aes(fill = Site), alpha = 0.4) +
+  #xlim(c(-0.5,200))+
+  ylab("CH4 fluxes (mg. m-2. 30min-1)")+
+  # #scale_color_manual(values = c("#000000","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  #scale_color_manual(values = c("#868686FF","#0073C2FF", "#EFC000FF", "#FC4E07"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  facet_wrap(~group)
+
+p
+
+ggsave("D:/graphs/boxplots_gf_30min_full.png",width = 140, height = 80, unit="mm")
+
+
+###################Now let's make some 3D plots with plotly
+#ploting methane, GPP and Ts for instance
+library(plotly)
+library(akima)
+palette <- colorRampPalette(c("blue", "white", "red"))
+
+##CH4, GPP & Ts
+
+fig <- plot_ly(methane_daily_sum[methane_daily_sum$Site=="Hålmyran",], x = ~Ts, y = ~GPP_gc, z = ~CH4_flux_gf, color = ~doy,colors=palette(200))
+fig
+htmlwidgets::saveWidget(fig, "D:/graphs/GPP_Ts_CH4_Halmyran.html")
+
+
+fig <- plot_ly(methane_daily_sum[methane_daily_sum$Site=="Stortjarn",], x = ~Ts, y = ~GPP_gc, z = ~CH4_flux_gf, color = ~doy,colors=palette(200))
+fig
+htmlwidgets::saveWidget(fig, "D:/graphs/GPP_Ts_CH4_Stortjarn.html")
+
+fig <- plot_ly(methane_daily_sum[methane_daily_sum$Site=="Degerö",], x = ~Ts, y = ~GPP_gc, z = ~CH4_flux_gf, color = ~doy,colors=palette(200))
+fig
+htmlwidgets::saveWidget(fig, "D:/graphs/GPP_Ts_CH4_Degero.html")
+
+fig <- plot_ly(methane_daily_sum[methane_daily_sum$Site=="Hälsingfors",], x = ~Ts, y = ~GPP_gc, z = ~CH4_flux_gf, color = ~doy,colors=palette(200))
+fig
+htmlwidgets::saveWidget(fig, "D:/graphs/GPP_Ts_CH4_Halsingfors.html")
+
+
+
+#####CH4, GPP & WTD
+
+fig <- plot_ly(methane_daily_sum[methane_daily_sum$Site=="Hålmyran",], x = ~WTD, y = ~GPP_gc, z = ~CH4_flux_gf, color = ~doy,colors=palette(200))
+fig
+htmlwidgets::saveWidget(fig, "D:/graphs/GPP_WTD_CH4_Halmyran.html")
+
+#####WTD and CH4
+#all sites together GPP
+library(ggplot2)
+library(scales)
+ch4 <- ggplot(data=methane_daily_sum,aes(x = date,y = CH4_flux_gf,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+#library(plotly)
+ch4
+
+wtd <- ggplot(data=methane_full_daily_sum,aes(x = date,y = WTD,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("WTD (cm)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank())
+
+#library(plotly)
+wtd
+
+
+
+library(ggpubr)
+final <- ggarrange(wtd,ch4, nrow = 2)
+final
+#ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_GPP&WTD.png",width = 140, height = 140, unit="mm")
+htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP&WTDP.html")
+
+
+######
+#Shifting WTD by a certain number of days (20)
+shifted_wtd_df <- methane_daily_sum
+shifted_wtd_df$date_shifted <- shifted_wtd_df$date - 20
+shifted_wtd_df$WTD_shift <- NA
+
+shifted_wtd_df_full <- methane_full_daily_sum
+shifted_wtd_df_full$date_shifted <- shifted_wtd_df_full$date - 20
+shifted_wtd_df_full$WTD_shift <- NA
+
+
+library(dplyr)
+
+counter_1 <- 0
+final_df <- NULL
+for(site in unique(shifted_wtd_df$Site)){
+  #site= unique(shifted_wtd_df$Site)[1]
+  current_df <- shifted_wtd_df %>%
+    filter(Site==site) %>%
+    mutate(WTD_shift = c(rep(NA,20),WTD[1:(length(WTD)-20)]))
+  if(counter_1==0) final_df <- current_df
+  if(counter_1>0) final_df <- rbind(final_df,current_df)
+  
+  counter_1=counter_1+1
+}
+
+
+counter_2 <- 0
+final_df_full <- NULL
+for(site in unique(shifted_wtd_df_full$Site)){
+  #site= unique(shifted_wtd_df$Site)[1]
+  current_df <- shifted_wtd_df_full %>%
+    filter(Site==site) %>%
+    mutate(WTD_shift = c(rep(NA,20), WTD[1:(length(WTD)-20)]))
+  if(counter_1==0) final_df_full <- current_df
+  if(counter_1>0) final_df_full <- rbind(final_df_full,current_df)
+  
+  counter_1=counter_1+1
+}
+
+
+##all sites together methane with shifted WTD, colour with season
+g <- ggplot(data=final_df,aes(x = WTD_shift,y = CH4_flux_gf,color=doy,label = date))+
+  geom_point()+
+  scale_color_gradient2(low="blue", mid="white", high="red", midpoint = 213)+
+  # geom_smooth(span=0.2)+
+  xlab("WTD shifted 20 days (cm)")+
+  ylab("CH4 (mg. m-2. d-1)")+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.89, 0.85), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.key.size = unit(0.3,"cm"),
+        legend.text=element_text(size=8),legend.spacing.y = unit(0.01, 'cm'))+
+  facet_wrap(~Site)
+
+g
+# ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_WTD_shifted20_CH4_FACET.png",width = 140, height = 100, unit="mm")
+#htmlwidgets::saveWidget(ggplotly(g), "D:/graphs/gf_daily_sum_FULL_GPP_CH4_noline.html")
+
+
+
+#WTD shifted 20 days along with methane
+wtd20 <- ggplot(data=final_df_full,aes(x = date,y = WTD_shift,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,200)+
+  ylab("WTD shifted 20 days (cm)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.85, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank())
+
+#library(plotly)
+wtd20
+
+library(ggpubr)
+final <- ggarrange(wtd20,ch4, nrow = 2)
+final
+
+#ggplotly(g)
+ggsave("D:/graphs/gf_daily_sum_FULL_GPP&WTD_20.png",width = 140, height = 140, unit="mm")
+
+
+#########################################################
+
+library(ggplot2)
+library(akima)
+library(dplyr)
+
+methane_daily_sum <- as.data.frame(methane_daily_sum)
+
+counter <- 0
+for(site in unique(methane_daily_sum$Site)){
+  interpdf_current <- interp2xyz(interp(x=methane_daily_sum[methane_daily_sum$Site==site,"GPP_gc"],
+                                         y=methane_daily_sum[methane_daily_sum$Site==site,"Ts"],
+                                         z=methane_daily_sum[methane_daily_sum$Site==site,"CH4_flux_gf"],
+                                         duplicate="mean"),
+                                  data.frame=TRUE) %>%
+    mutate(Site=site)
+  if(counter==0) interpdf <- interpdf_current
+  if(counter>0) interpdf <- rbind(interpdf,interpdf_current)
+  
+  counter=counter+1
+}
+
+
+interpdf_final <- interpdf %>%
+  filter(!is.na(z)) %>%
+  tbl_df() %>%
+  mutate(#x=factor(x, levels = unique(x)),
+         #y=factor(y,levels = unique(y)),
+         Site=as.factor(Site))
+
+interpdf_final <- as.data.frame(interpdf_final)
+
+  ggplot(interpdf_final, aes(x = x, y = y, z = z)) +
+  geom_point(aes(color = z), shape=15, size=5) +
+  scale_color_gradient2(low="blue", mid="gray", high="red", midpoint = 100)+
+  facet_wrap(~Site)+
+  geom_contour(color = "white", alpha = 0.05) + 
+  #scale_fill_distiller(palette="Spectral", na.value="white") + 
+  theme_bw()
+
+  
+###############
+  #Methane and VPD in 2 panels
+  vpd <- ggplot(data=methane_full_daily_sum,aes(x = date,y = VPD,color=Site))+
+    geom_line()+
+    # geom_smooth(span=0.2)+
+    #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+    #ylim(-10,150)+
+    ylab("VPD (kPa)")+
+    theme_classic()+
+    scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+    theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+    # facet_wrap(~ Site)+
+    #+
+    theme(legend.position = c(0.85, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+          legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+          axis.title.x = element_blank())
+  
+  #library(plotly)
+  vpd
+  
+  ch4 <- ggplot(data=methane_daily_sum,aes(x = date,y = CH4_flux_gf,color=Site))+
+    geom_point(alpha=0.2)+
+    geom_smooth(span=0.2)+
+    #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+    #ylim(-10,150)+
+    ylab("CH4 (mg. m-2. d-1)")+
+    theme_classic()+
+    scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+    theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+    # facet_wrap(~ Site)+
+    #+
+    theme(legend.position = c(0.85, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+          legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+  
+  #library(plotly)
+  ch4
+  
+
+  library(ggpubr)
+  final <- ggarrange(ch4,vpd, nrow = 2)
+  final
+  
+  #ggplotly(g)
+  ggsave("D:/graphs/gf_daily_sum_FULL_GPP&VPD.png",width = 140, height = 140, unit="mm")
+  
+  
+##############################
+#Let's check precipitation
+################################
+g <- ggplot(data=methane %>% filter(Site=="Hålmyran"), aes(x=datetime, y=P))+
+  geom_point()+
+  scale_x_datetime(breaks = "1 month", labels=date_format("%b"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.9, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+  
+g
+ggplotly(g)
+
+
+g <- ggplot(data=methane %>% filter(Site=="Degerö"), aes(x=datetime, y=CH4_flux_gf))+
+  geom_point()+
+  scale_x_datetime(breaks = "1 month", labels=date_format("%b"))+
+  theme_classic()+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  theme(legend.position = c(0.9, 0.75), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+g
+ggplotly(g)
+
+
+
+###############################################################
+################################################################
+###############################################################
+##########################METEO DATA###########################
+###############################################################
+################################################################
+###############################################################
+#####CH4
+#all sites together GPP
+library(ggplot2)
+library(scales)
+ch4 <- ggplot(data=methane_daily_sum,aes(x = date,y = CH4_flux_gf,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("CH4(mg.m-2.d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.9, 0.65), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+  # theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+  #       legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+#library(plotly)
+ch4
+
+
+ch4_standalone <- ggplot(data=methane_daily_sum,aes(x = date,y = CH4_flux_gf,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("CH4(mg.m-2.d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  # theme(legend.position = c(0.9, 0.65), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2), legend.key.size = unit(0.5, "cm"),
+  #       legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+  #       legend.margin =margin(r=0,l=0,t=0,b=0.5),
+  #       axis.title.x = element_blank(),axis.text.x = element_blank())
+  theme(legend.position = c(0.88, 0.67), legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+      legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+#library(plotly)
+ch4_standalone
+ggsave("D:/graphs/methane_standalone.png",width = 130, height = 60, unit="mm")
+
+
+#####WTD
+wtd <- ggplot(data=methane_full_daily_sum,aes(x = date,y = WTD,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("WTD (cm)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  # theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+  #       legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+  #       axis.title.x = element_blank(),axis.text.x = element_blank())
+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+#library(plotly)
+wtd
+
+
+methane_full_daily_sum_copy <- methane_full_daily_sum
+methane_full_daily_sum_copy$WTD[which(methane_full_daily_sum_copy$Ts <= 0.5)] <- NA
+methane_full_daily_sum_copy$WTD[which(methane_full_daily_sum_copy$date >= as.Date("2020-12-01"))] <- NA
+wtd2 <- ggplot(data=methane_full_daily_sum_copy,aes(x = date,y = WTD,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("WTD (cm)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  # theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+  #       legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+  #       axis.title.x = element_blank(),axis.text.x = element_blank())
+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'))
+
+#library(plotly)
+wtd2
+
+#WTD shifted 20 days along with methane
+wtd20 <- ggplot(data=final_df_full,aes(x = date,y = WTD_shift,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,200)+
+  ylab("WTD shift20 (cm)")+#ylab("WTD shifted 20 days (cm)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+wtd20
+
+
+#####Ta
+ta <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ta,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ta (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ta
+
+#####Ts
+ts <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts
+
+ts_comb <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts combined (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts_comb
+
+
+ts_comb_top <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts combined (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.88, 0.67), legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts_comb_top
+
+
+
+ts2 <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts2,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts 2 cm (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts2
+
+ts10 <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts10,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts 10 cm (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts10
+
+
+ts15 <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts15,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts 15 cm (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts15
+
+
+ts30 <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts30,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts 30 cm (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts30
+
+ts50 <- ggplot(data=methane_full_daily_sum,aes(x = date,y = Ts50,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts 50 cm (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5))#,
+        #axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts50
+
+
+
+#All soil temperatures per site
+
+ts_deg <- ggplot(data=methane_full_daily_sum %>% 
+                   filter(Site=="Degerö") %>%
+                   select(date,Ts2,Ts10,Ts15,Ts30,Ts50) %>%
+                   pivot_longer(cols = starts_with("Ts"),
+                                names_to = "depth",
+                                names_prefix = "",
+                                values_to = "Temp") %>%
+                   mutate(depth = factor(depth, levels = c("Ts2","Ts10","Ts15","Ts30","Ts50"))),
+                 aes(x = date,y = Temp,color=depth))+
+  geom_line()+
+  scale_colour_manual(values=c(Ts2="#09140c",Ts10="#77dc95",Ts15="#a4b338",Ts30="#c9946d",Ts50="#e01b30"))+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  annotate("text", x=as.Date("2020-04-15"), y=20, label="Degerö", color="red")+
+  theme(legend.position = c(0.88, 0.67), legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts_deg
+
+
+ts_halm <- ggplot(data=methane_full_daily_sum %>% 
+                   filter(Site=="Hålmyran") %>%
+                   select(date,Ts2,Ts10,Ts15,Ts30,Ts50) %>%
+                   pivot_longer(cols = starts_with("Ts"),
+                                names_to = "depth",
+                                names_prefix = "",
+                                values_to = "Temp") %>%
+                   mutate(depth = factor(depth, levels = c("Ts2","Ts10","Ts15","Ts30","Ts50"))),
+                 aes(x = date,y = Temp,color=depth))+
+  geom_line()+
+  scale_colour_manual(values=c(Ts2="#09140c",Ts10="#77dc95",Ts15="#a4b338",Ts30="#c9946d",Ts50="#e01b30"))+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  annotate("text", x=as.Date("2020-04-15"), y=20, label="Hålmyran", color="red")+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts_halm
+
+
+
+ts_hals <- ggplot(data=methane_full_daily_sum %>% 
+                    filter(Site=="Hälsingfors") %>%
+                    select(date,Ts2,Ts10,Ts15,Ts30,Ts50) %>%
+                    pivot_longer(cols = starts_with("Ts"),
+                                 names_to = "depth",
+                                 names_prefix = "",
+                                 values_to = "Temp") %>%
+                    mutate(depth = factor(depth, levels = c("Ts2","Ts10","Ts15","Ts30","Ts50"))),
+                  aes(x = date,y = Temp,color=depth))+
+  geom_line()+
+  scale_colour_manual(values=c(Ts2="#09140c",Ts10="#77dc95",Ts15="#a4b338",Ts30="#c9946d",Ts50="#e01b30"))+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  annotate("text", x=as.Date("2020-04-15"), y=20, label="Hälsingfors", color="red")+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts_hals
+
+ts_sto <- ggplot(data=methane_full_daily_sum %>% 
+                   filter(Site=="Stortjarn") %>%
+                   select(date,Ts2,Ts10,Ts15,Ts30,Ts50) %>%
+                   pivot_longer(cols = starts_with("Ts"),
+                                names_to = "depth",
+                                names_prefix = "",
+                                values_to = "Temp") %>%
+                   mutate(depth = factor(depth, levels = c("Ts2","Ts10","Ts15","Ts30","Ts50"))),
+                 aes(x = date,y = Temp,color=depth))+
+  geom_line()+
+  scale_colour_manual(values=c(Ts2="#09140c",Ts10="#77dc95",Ts15="#a4b338",Ts30="#c9946d",Ts50="#e01b30"))+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Ts (°C)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  annotate("text", x=as.Date("2020-04-15"), y=20, label="Stortjarn", color="red")+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5))#,
+#axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+ts_sto
+
+
+
+#####Ts
+PARin <- ggplot(data=methane_full_daily_sum,aes(x = date,y = PARin/48,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Average daily PAR (W.m-2)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = c(0.88, 0.67), legend.background = element_rect(fill = "white", colour = "black", size=0.3,linetype = 2), legend.key.size = unit(0.5, "cm"),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.005, 'cm'),
+        legend.margin =margin(r=0,l=0,t=0,b=0.5),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+PARin
+
+
+
+#####VPD
+vpd <- ggplot(data=methane_full_daily_sum,aes(x = date,y = VPD,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("VPD (kPa)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+vpd
+
+####RH
+rh <- ggplot(data=methane_full_daily_sum,aes(x = date,y = RH,color=Site))+
+  geom_line()+
+  # geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("RH (%)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+#library(plotly)
+rh
+
+#####GPP
+
+gpp <- ggplot(data=methane_daily_sum,aes(x = date,y = GPP_gc,color=Site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("GPP(gC.m-2.d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+gpp
+
+
+####
+#####Precipitation
+
+p <- ggplot(data=methane_full_daily_sum[methane_full_daily_sum$Site=="Hålmyran",],aes(x = date,y = P))+
+  geom_bar(stat = "identity",color="blue",fill="blue")+
+  #geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("P (mm. d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+p
+
+
+p_cum <- ggplot(data=methane_full_daily_sum[methane_full_daily_sum$Site=="Hålmyran",] %>%
+                  mutate(p_cum = cumsum(P)),
+                aes(x = date,y = p_cum))+
+  #geom_bar(stat = "identity",color="blue",fill="blue")+
+  geom_line()+
+  #geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("P (mm. d-1)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+p_cum
+
+
+p_cum_all <- ggplot(data=methane_full_daily_sum %>%
+                      group_by(Site) %>%
+                      mutate(p_cum = cumsum(P)),
+                aes(x = date,y = p_cum, color=Site))+
+  #geom_bar(stat = "identity",color="blue",fill="blue")+
+  geom_line()+
+  #geom_smooth(span=0.2)+
+  #geom_point(data=methane[is.na(methane$CH4_flux),],aes(x = datetime,y = CH4_flux_gf),size=0.01,shape=1,color="red")+
+  #ylim(-10,150)+
+  ylab("Cumulated (mm)")+
+  theme_classic()+
+  scale_x_date(breaks = "1 month", labels=date_format("%b"))+
+  theme(panel.border = element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  # facet_wrap(~ Site)+
+  #+
+  theme(legend.position = "none", legend.background = element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
+        legend.text=element_text(size=8),legend.title=element_blank(),legend.spacing.y = unit(0.01, 'cm'),
+        axis.title.x = element_blank(),axis.text.x = element_blank())
+
+p_cum_all
+
+
+library(ggpubr)
+all_plots <- ggarrange(ta,ts,vpd,wtd,wtd20,gpp,ch4, ncol=1)
+all_plots
+
+library(cowplot)
+# plot_grid(ta,ts,vpd,wtd,wtd20,gpp,ch4, ncol=1, align = "v",
+#           rel_heights = c(1,1,1,1,1,1,1.5))
+
+# plot_grid(ta,ts,vpd,rh,p,wtd,gpp,ch4, ncol=1, align = "v",
+#           rel_heights = c(1,1,1,1,1,1,1,1.4))
+
+##for 2 min presentation
+plot_grid(ch4,gpp,ta,ts,wtd2, ncol=1, align = "v",
+          rel_heights = c(1.5,1.15,1,1,1.3))
+
+
+ggsave("D:/graphs/CH4_and_all_p_simple.png",width = 150, height = 150, unit="mm")
+
+
+##For paper, environmental only
+plot_grid(ta,ts,wtd2, ncol=1, align = "v",
+          rel_heights = c(1,1,1.25))
+ggsave("D:/graphs/meteo_paper.png",width = 130, height = 100, unit="mm")
+
+plot_grid(PARin,p_cum_all,ta,ts_comb,wtd2, ncol=1, align = "v",
+          rel_heights = c(1,1,1,1,1.25))
+
+ggsave("D:/graphs/meteo_paper_all.png",width = 130, height = 250, unit="mm")
+
+
+##Plotting the different soil temperature depths...
+plot_grid(ts_comb_top,ts2,ts10,ts15,ts30,ts50, ncol=1, align = "v",
+          rel_heights = c(1,1,1,1,1,1.25))
+ggsave("D:/graphs/all_temperatures.png",width = 130, height = 250, unit="mm")
+
+#Different soil temperature depths of each site
+plot_grid(ts_deg,ts_halm,ts_hals,ts_sto, ncol=1, align = "v",
+          rel_heights = c(1,1,1,1,1,1.25))
+ggsave("D:/graphs/all_temperatures_per_site.png",width = 130, height = 250, unit="mm")
+########################
+plot_grid(ta,ts,vpd,rh,p_cum,wtd,gpp,ch4, ncol=1, align = "v",
+          rel_heights = c(1,1,1,1,1,1,1,1.4))
+
+
+ggsave("D:/graphs/CH4_and_all.png",width = 200, height = 240, unit="mm")
+

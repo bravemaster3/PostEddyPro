@@ -1,0 +1,60 @@
+Pwet <- ggplot(data = d, 
+               aes(x = Date, y = value,
+                   group = variable,
+                   linetype = variable,
+                   col = variable)) +
+  #xlab(" September 2017") +
+  ylab("streamflow mm/h") +
+  geom_line(lwd = 1.5) +
+  #geom_point(size = 3, alpha = 0.6) +
+  scale_color_manual("",values=c("#009E73" ,"#FC4E07","#4E84C4")) +
+  
+  scale_x_datetime(date_labels = '%y-%m-%d %H:%M', date_breaks = '8 hour', date_minor_breaks = "1 hour") +
+  
+  scale_linetype_manual("", values = c( "solid", "solid","solid")) +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  theme(panel.border = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line()) +
+  theme(axis.title.y = element_text(size = 14),
+        axis.text.x = element_text(colour = "black", size = 12,angle = 25, hjust = 1),
+        axis.text.y = element_text(colour = "black", size = 12),
+        axis.title.x =element_blank()) +
+  theme(legend.position = "none") +
+  guides(color = guide_legend(override.aes = list(linetype = c(1,1,1),
+                                                  alpha    = 1.0),
+                              nrow = 1, byrow = TRUE))
+
+prec <-wet%>% select("Date","Precipitation h" )
+
+
+
+
+p2 <- ggplot(data = prec, aes(x =Date, y = `Precipitation h`)) +
+  
+  geom_linerange(aes(x = Date,
+                     ymin = 0,
+                     ymax = `Precipitation h`),
+                 color = "#2c7fb8",
+                 size = 1.5) +
+  xlab("") +
+  ylab(paste("Precipitation mm/h", sep = "")) +
+  scale_y_reverse(expand = c(0, 0), limits = c(max(prec$`Precipitation h`), 0)) +
+  theme_classic()+
+  
+  theme( panel.border = element_rect(colour = "black", fill=NA, size=0.5),
+         panel.grid.minor = element_blank(),
+         axis.line.x = element_blank()) +
+  theme(axis.line.y = element_line(color = "black"),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = "black", size = 12),
+        axis.ticks.x = element_blank(),
+        axis.title.y = element_text(size = 14),
+        axis.title.x =element_blank()) +
+  theme(legend.position = "none")+
+  
+  ggtitle(label = "High precipitation")
+
+cowplot::plot_grid(p2 +
+                     theme(plot.title = element_text(lineheight = 0.9)),Pwet, align = "v", ncol = 1, rel_heights = c(0.35, 0.75))

@@ -1,0 +1,57 @@
+################################
+#######Monthly anomalies########
+################################
+g_ch4_gpp <- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_col="GPP_sum", y_col = "FCH4_sum")
+g_ch4_gpp
+
+g_ch4_reco <- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_col="Reco_sum", y_col = "FCH4_sum", x_label = "Monthly Reco anomaly (gC.m-2.d-1)")
+g_ch4_reco
+
+g_ch4_nee <- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_col="NEE_sum", y_col = "FCH4_sum", x_label = "Monthly NEE anomaly (gC.m-2.d-1)")
+g_ch4_nee
+
+g_ch4_PARin <- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_label = "Monthly PARin anomaly (W.m-2)", x_col="PARin_f", y_col = "FCH4_sum")
+g_ch4_PARin
+
+g_ch4_wtd<- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_label = "Monthly WTD  anomaly (cm)", x_col="WTD_f", y_col = "FCH4_sum")
+g_ch4_wtd
+
+g_ch4_ts<- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_label = "Monthly Ts 15cm  anomaly (°C)", x_col="Ts_f", y_col = "FCH4_sum")
+g_ch4_ts
+
+g_ch4_ta<- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_label = "Monthly Ta  anomaly (°C)", x_col="Ta_f", y_col = "FCH4_sum")
+g_ch4_ta
+
+g_ch4_ts1<- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_label = "Monthly Ts 2cm  anomaly (°C)", x_col="Ts1", y_col = "FCH4_sum")
+g_ch4_ts1
+
+g_ch4_ts2<- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_label = "Monthly Ts 10cm  anomaly (°C)", x_col="Ts2", y_col = "FCH4_sum")
+g_ch4_ts2
+
+
+g_ch4_ts3<- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_label = "Monthly Ts 15cm  anomaly (°C)", x_col="Ts3", y_col = "FCH4_sum")
+g_ch4_ts3
+
+g_ch4_ts4<- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_label = "Monthly Ts 30cm  anomaly (°C)", x_col="Ts4", y_col = "FCH4_sum")
+g_ch4_ts4
+
+g_ch4_ts5<- plotter_monthly_anomalies_2(list(halm_month,deg_month,sto_month,hals_month), x_label = "Monthly Ts 50cm  anomaly (°C)", x_col="Ts5", y_col = "FCH4_sum")
+g_ch4_ts5
+
+#
+# figure <- ggarrange(g_ch4_gpp,g_ch4_ts,g_ch4_wtd,g_ch4_PARin, ncol = 1, common.legend = TRUE, align = "v", heights = c(1,1,1,1,1,1.45))
+#
+# annotate_figure(figure, left = textGrob("Monthly CH4 flux anomaly (g. m-2. d-1)", rot = 90, vjust = 1, gp = gpar(cex = 1)))
+#
+# ggsave("D:/EC/Data_organized/Graphs_all/anomalies_old.png",
+#        plot = annotate_figure(figure, left = textGrob("Monthly CH4 flux anomaly (mg. m-2. d-1)", rot = 90, vjust = 1, gp = gpar(cex = 1))),
+#        height=30,width=15, units = "cm", bg = "white")
+
+figure <- ggarrange(g_ch4_gpp, g_ch4_reco, g_ch4_PARin, g_ch4_ts1, g_ch4_ts, g_ch4_wtd, ncol = 1, common.legend = TRUE, align = "v", heights = c(1,1,1,1,1,1,1,1.45))
+
+annotate_figure(figure, left = textGrob("Monthly CH4 flux anomaly (g. m-2. d-1)", rot = 90, vjust = 1, gp = gpar(cex = 1)))
+
+
+ggsave("D:/EC/Data_organized/Graphs_all/anomalies_new.png",
+       plot = annotate_figure(figure, left = textGrob("Monthly CH4 flux anomaly (mg. m-2. d-1)", rot = 90, vjust = 1, gp = gpar(cex = 1))),
+       height=40,width=40, units = "cm", bg = "white")
