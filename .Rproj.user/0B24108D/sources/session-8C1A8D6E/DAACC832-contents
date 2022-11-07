@@ -1,8 +1,0 @@
-temp <- c("2016"=7.5,
-          "2017"=6,
-          "2018"=10,
-          "2019"=11,
-          "2020"=9)
-
-#Anomalies are calculated as follows
-temp-mean(temp)

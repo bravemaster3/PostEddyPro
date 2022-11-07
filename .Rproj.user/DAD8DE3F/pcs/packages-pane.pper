@@ -1,7 +1,0 @@
-{
-    "installOptions": {
-        "installFromRepository": true,
-        "libraryPath": "C:/Users/kono0001/AppData/Local/R/cache/R/renv/library/PostEddyPro-65a48667/R-4.1/x86_64-w64-mingw32",
-        "installDependencies": true
-    }
-}
