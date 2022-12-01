@@ -12,6 +12,7 @@
 #' @param Temp_col name of the temperature column to be used for u_star threshold calculation
 #' @param datetime_start starting datetime as a posixct object (format \%Y-\%m-\%d \%H:\%M:\%S") for creating a complete dataset to ensure no missing values exist in the final dataset. If not provided (default NULL), the first/minimum datetime will be used.
 #' @param datetime_end Ending datetime as a posixct object (format \%Y-\%m-\%d \%H:\%M:\%S") for creating a complete dataset to ensure no missing values exist in the final dataset. If not provided (default NULL), the last/maximum datetime will be used.
+#' @param ustar_SetThresh A given threshold for ustar filtering if that is known (e.g. 0.1). The unit is m/s
 #'
 #' @return a dataframe having some additional columns, with the flux column suffixed by "_final" being the quality checked flux values
 #' @export
@@ -26,6 +27,7 @@ quality_control <- function(fluxes_meteo,
                             RSSI=FALSE,
                             RSSI_col="diag_77_mean",
                             ustar=TRUE,
+                            ustar_SetThresh=NULL,
                             Temp_col="Ts",
                             datetime_start=NULL,
                             datetime_end=NULL
@@ -61,7 +63,7 @@ quality_control <- function(fluxes_meteo,
   }
 
   if(ustar==TRUE){
-    list_ustar <- PostEddyPro::ustar_filter(fluxes_meteo, gas=gas, Temp_col = Temp_col)
+    list_ustar <- PostEddyPro::ustar_filter(fluxes_meteo, gas=gas, Temp_col = Temp_col, ustarSetThresh = ustar_SetThresh)
     print(paste0("the ustar threshold is: ", list_ustar$ustar_thresh))
     fluxes_meteo$flag_ustar <- list_ustar$flag_ustar
     fluxes_meteo$ch4_flux_final[fluxes_meteo$flag_ustar==1] <- NA
