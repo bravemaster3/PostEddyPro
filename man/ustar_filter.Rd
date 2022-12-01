@@ -10,7 +10,8 @@ ustar_filter(
   Temp_col = "Ts",
   number_Temp_classes = 6,
   number_ustar_classes = 20,
-  ustar_maximum_limit = 0.8
+  ustar_maximum_limit = 0.8,
+  ustarSetThresh = NULL
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ ustar_filter(
 \item{number_ustar_classes}{number of bin of ustar to be used, default is 20}
 
 \item{ustar_maximum_limit}{an upper limit to exclude for ustar. This argument is particularly useful when abnormally high values are contained in ustar...}
+
+\item{ustarSetThresh}{A given threshold for ustar filtering if that is known (e.g. 0.1). The unit is m/s}
 }
 \value{
 a list containing the ustar threshold based on the change point detection method, and a vector of flags (1 means low turbulence or ustar below thresold and 0 means enough turbulence) the same length as the number of rows of the input data.frame

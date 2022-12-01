@@ -14,6 +14,7 @@ quality_control(
   RSSI = FALSE,
   RSSI_col = "diag_77_mean",
   ustar = TRUE,
+  ustar_SetThresh = NULL,
   Temp_col = "Ts",
   datetime_start = NULL,
   datetime_end = NULL
@@ -37,6 +38,8 @@ quality_control(
 \item{RSSI_col}{name of the column that contains RSSI values.}
 
 \item{ustar}{boolean telling whether or not to do u* filtering. Default is TRUE}
+
+\item{ustar_SetThresh}{A given threshold for ustar filtering if that is known (e.g. 0.1). The unit is m/s}
 
 \item{Temp_col}{name of the temperature column to be used for u_star threshold calculation}
 
