@@ -13,7 +13,7 @@
 #'
 #' @return a ggplot object
 #' @export
-plotter_daily <- function(lisUt_df, y_label, y_col = "FCH4_sum", show_x_label=FALSE, ignore_NA=TRUE, GPP=FALSE, Reco=FALSE, NEE=FALSE, yintercept_line = FALSE, yintercept_value= 0){
+plotter_daily <- function(list_df, y_label, y_col = "FCH4_sum", show_x_label=FALSE, ignore_NA=TRUE, GPP=FALSE, Reco=FALSE, NEE=FALSE, yintercept_line = FALSE, yintercept_value= 0){
 
   df <- Reduce(function(...) rbind(...), list_df)
   #if(y_col=="GPP_sum") df[df[,y_col] < 0 & !is.na(df[,y_col]), y_col] <- 0
