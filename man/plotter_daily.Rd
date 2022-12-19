@@ -5,19 +5,19 @@
 \title{Daily plotter for all sites for a given variable}
 \usage{
 plotter_daily(
-  list_df,
+  lisUt_df,
   y_label,
   y_col = "FCH4_sum",
   show_x_label = FALSE,
   ignore_NA = TRUE,
   GPP = FALSE,
   Reco = FALSE,
-  NEE = FALSE
+  NEE = FALSE,
+  yintercept_line = FALSE,
+  yintercept_value = 0
 )
 }
 \arguments{
-\item{list_df}{a list of dataframes having the same structure and able to be bound by row. When this comes from the saved aggregated tables, they are just the _day element of the list.}
-
 \item{y_label}{label of the y axis. it can also be a bquote if superscripts or underscripts are needed.}
 
 \item{y_col}{string, name of the variable to be represented on the y axis.}
@@ -25,6 +25,18 @@ plotter_daily(
 \item{show_x_label}{logical, TRUE to show x-axis text and title, FALSE to hider x-axis text and title.}
 
 \item{ignore_NA}{logical. If TRUE, segments without NA will be plotted separately to avoid interpolation of geom_smooth where there are missing values}
+
+\item{GPP}{logical. If TRUE, the graph us then tailored for GPP. default is FALSE}
+
+\item{Reco}{logical. If TRUE, the graph us then tailored for Reco. default is FALSE}
+
+\item{NEE}{logical. If TRUE, the graph us then tailored for NEE. default is FALSE}
+
+\item{yintercept_line}{logical. If TRUE, a horizontal line will be added. default is FALSE}
+
+\item{yintercept_value}{positive integer. specifies the y value at which the horizonal line will be drawn. default is 0}
+
+\item{list_df}{a list of dataframes having the same structure and able to be bound by row. When this comes from the saved aggregated tables, they are just the _day element of the list.}
 }
 \value{
 a ggplot object
