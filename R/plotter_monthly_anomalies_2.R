@@ -1,3 +1,24 @@
+#' Plotting monthly anomalies average of every month over the years
+#'
+#' @param list_df a list of dataframes having the same structure and able to be bound by row. When this comes from the saved aggregated tables, they are just the _month element of the list.
+#' @param period_start start date in the format YYYY-mm-dd
+#' @param period_end End date in the format YYYY-mm-dd
+#' @param x_label Label to write on the x axis
+#' @param y_label Label to write on the y axis
+#' @param x_col the x column name
+#' @param y_col the y column name
+#' @param full_periods_only logical. If TRUE, full years only will be used
+#' @param show_x_label logical. Show or not show x label
+#' @param show_y_label logical. Show or not show x label
+#' @param add_geom_smooth logical. Show or not a linear fit
+#' @param color_grey logical. color in grey or not
+#' @param add_rsq whether or not to add r-squared
+#' @param growing_season logical, whether or not to limit the dataset to the growing season (May to October)
+#' @param levels_sites a vector showing the order of the site names.
+#'
+#' @return a ggplot object
+#' @export
+#'
 plotter_monthly_anomalies_2 <- function(list_df,
                                       period_start="2020-04-01",
                                       period_end="2022-03-31",

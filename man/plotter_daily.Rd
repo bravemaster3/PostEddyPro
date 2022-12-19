@@ -5,7 +5,7 @@
 \title{Daily plotter for all sites for a given variable}
 \usage{
 plotter_daily(
-  lisUt_df,
+  list_df,
   y_label,
   y_col = "FCH4_sum",
   show_x_label = FALSE,
@@ -18,6 +18,8 @@ plotter_daily(
 )
 }
 \arguments{
+\item{list_df}{a list of dataframes having the same structure and able to be bound by row. When this comes from the saved aggregated tables, they are just the _day element of the list.}
+
 \item{y_label}{label of the y axis. it can also be a bquote if superscripts or underscripts are needed.}
 
 \item{y_col}{string, name of the variable to be represented on the y axis.}
@@ -35,8 +37,6 @@ plotter_daily(
 \item{yintercept_line}{logical. If TRUE, a horizontal line will be added. default is FALSE}
 
 \item{yintercept_value}{positive integer. specifies the y value at which the horizonal line will be drawn. default is 0}
-
-\item{list_df}{a list of dataframes having the same structure and able to be bound by row. When this comes from the saved aggregated tables, they are just the _day element of the list.}
 }
 \value{
 a ggplot object

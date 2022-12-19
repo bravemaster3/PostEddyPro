@@ -1,3 +1,18 @@
+#' Plotting monthly anomalies average from yearly or growing-season
+#'
+#' @param list_df a list of dataframes having the same structure and able to be bound by row. When this comes from the saved aggregated tables, they are just the _month element of the list.
+#' @param x_label Label to write on the x axis
+#' @param y_label Label to write on the y axis
+#' @param x_col the x column name
+#' @param y_col the y column name
+#' @param full_periods_only logical. If TRUE, full years only will be used
+#' @param show_x_label logical. Show or not show x label
+#' @param show_y_label logical. Show or not show x label
+#' @param add_geom_smooth logical. Show or not a linear fit
+#'
+#' @return a ggplot object
+#' @export
+
 plotter_monthly_anomalies <- function(list_df,
                                       x_label="Monthly GPP anomaly (gC. m-2. month-1)",
                                       y_label="Monthly CH4 flux anomaly (g. m-2. month-1)",
