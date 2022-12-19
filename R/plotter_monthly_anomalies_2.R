@@ -116,7 +116,7 @@ plotter_monthly_anomalies_2 <- function(list_df,
                         legend.text=ggplot2::element_text(size=8),legend.title=ggplot2::element_blank(),legend.spacing.y = ggplot2::unit(0.01, 'cm'))+
     facet_wrap(~factor(Site, levels = levels_sites), ncol = length(unique(df$Site)), nrow=1)
 
-  if(isTRUE(add_rsq)) g <- g+ ggpubr::stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "~`,`~")), size=3.5, p.accuracy = 0.05)#ggpmisc::stat_poly_eq(mapping=ggpmisc::use_label(c("R2")), p.digits = 2) #ggpmisc::stat_poly_eq(aes(label = ..rr.label..), formula=y~x, size = 3, alpha = 0.2,parse = TRUE, na.rm=TRUE)
+  if(isTRUE(add_rsq)) g <- g+ ggpubr::stat_cor(aes(label = paste(after_stat(rr.label), ..p.label.., sep = "~`,`~")), size=3.5, p.accuracy = 0.05)#ggpmisc::stat_poly_eq(mapping=ggpmisc::use_label(c("R2")), p.digits = 2) #ggpmisc::stat_poly_eq(aes(label = ..rr.label..), formula=y~x, size = 3, alpha = 0.2,parse = TRUE, na.rm=TRUE)
     #ggpmisc::stat_poly_eq(mapping=aes(ggpmisc::use_label(c("R2"))), p.digits = 2)
     #ggpubr::stat_cor(aes(label = ..rr.label..), color = "red", geom = "label")
 
