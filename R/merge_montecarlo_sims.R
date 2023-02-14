@@ -19,7 +19,7 @@ merge_montecarlo_sims <- function(gf_type = "rf", #alternatively "REddyProc"
                                                      gf_type2=gf_type
   ){
     if(gf_type2 == "rf"){
-      df_i <- utils::read.table(file_path, header=TRUE,sep=",")
+      df_i <- data.table::fread(file_path, header=TRUE,sep=",")
       df_i[,datetime] <- as.POSIXct(df_i[,datetime], format="%Y-%m-%d %H:%M:%S",tz="UTC")
     }
 
