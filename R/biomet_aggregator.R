@@ -50,7 +50,7 @@ biomet_aggregator <- function(aggr_var=c("hour","day","week","month","year","gro
     for(yr in unique(df$year)){
       g_s <- NA
       g_s <- yr - min(unique(df$year)) + 1
-      df$growing_season[which(df$month %in% c(month_start_growing_season:month_end_growing_season) & df$year==yr)] <- paste("Growing season", g_s, sep= " ")
+      df$growing_season[which(df$month %in% c(month_start_growing_season:month_end_growing_season) & df$year==yr)] <- paste("Growing season", yr, sep= " ")
       #df$growing_season[which(!(df$month %in% c(month_start_growing_season:month_end_growing_season)) & df$year==yr)] <-  paste("Non growing season", g_s, sep= " ")
       df$growing_season[which((df$month < month_start_growing_season) & df$year==yr)] <-  paste("Non growing season1", yr, sep= " ")
       df$growing_season[which((df$month > month_end_growing_season) & df$year==yr)] <-  paste("Non growing season2", yr, sep= " ")
