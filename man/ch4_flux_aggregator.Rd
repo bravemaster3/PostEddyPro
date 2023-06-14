@@ -9,7 +9,9 @@ ch4_flux_aggregator(
   df_mc,
   rd_err_df,
   month_start_growing_season = 5,
-  month_end_growing_season = 10
+  month_end_growing_season = 10,
+  growing_season_definition = "fixed_months",
+  df_Ta = NULL
 )
 }
 \arguments{
@@ -22,6 +24,11 @@ ch4_flux_aggregator(
 \item{month_start_growing_season}{Month of the start of growing season. Default is 5}
 
 \item{month_end_growing_season}{Month of the end of growing season. Default is 10}
+
+\item{growing_season_definition}{The way growing season is definied. "fixed_months" (default) will use the months between month_start_growing_season and month_end_growing_season.
+"meteorological" will use air temperature data to calculate the growing season start and end dates. This option requires to provide a dataframe containing date and air temperature data.}
+
+\item{df_Ta}{a dataframe containing 2 columns: a column named "date" containing dates, and a column named "Ta" containing daily average air temperatures}
 }
 \value{
 a list of half-hourly, hourly, daily, weekly, monthly and yearly aggregated flux dataframes

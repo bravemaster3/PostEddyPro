@@ -11,7 +11,9 @@ visualization(
   path_biomet = NULL,
   EC_df = NULL,
   biomet_df = NULL,
-  date_format = "\%Y-\%m-\%d"
+  date_format = "\%Y-\%m-\%d",
+  plot_co2 = TRUE,
+  plot_ch4 = TRUE
 )
 }
 \arguments{
@@ -28,6 +30,10 @@ visualization(
 \item{biomet_df}{biomet data read in as a dataframe.This is required when check_path_biomet is set to FALSE}
 
 \item{date_format}{If the eddypro output has not been altered, the date format is "\%Y-\%m-\%d", the default. If it has been opened in excel for instance, the date format is likely "\%d/\%m/\%Y"}
+
+\item{plot_co2}{logical, TRUE (default) for plotting also CO2, FALSE otherwise}
+
+\item{plot_ch4}{logical, TRUE (default) for plotting also CH4, FALSE otherwise}
 }
 \value{
 a named list, $data is a dataframe merged from flux and biomet files, $graphs is a graph of all gas fluxes
