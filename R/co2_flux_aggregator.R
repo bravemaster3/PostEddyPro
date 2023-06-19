@@ -6,14 +6,40 @@
 #' @param rd_err_df dataframe containing random errors already imputed
 #' @param month_start_growing_season Month of the start of growing season. Default is 5
 #' @param month_end_growing_season Month of the end of growing season. Default is 10
+#' @param growing_season_definition The way growing season is definied. "fixed_months" (default) will use the months between month_start_growing_season and month_end_growing_season.
+#' "meteorological" will use air temperature data to calculate the growing season start and end dates. This option requires to provide a dataframe containing date and air temperature data.
+#' @param df_Ta a dataframe containing 2 columns: a column named "date" containing dates, and a column named "Ta" containing daily average air temperatures
+#' @param df_Ts a dataframe containing 2 columns: a PosiXct column with timestamps in the format "%Y-%m-%d %H:%M:%S" and a column representing soil temperatures (e.g. Ts 15 cm☼)
+#' @param number_consec_days Minimum number of days used to define the growing season, for which air temperature, soil temperature or soil temperature amplitude remains above a set threshold
 #'
-#' @return a list of half-hourly, hourly, daily, weekly, monthly and yearly aggregated flux dataframes
+#' @return a list of half-hourly, hourly, daily, weekly, monthly, growing season and yearly aggregated flux dataframes
 #' @export
 co2_flux_aggregator <- function(path_to_df_f,
                                 df_mc,
                                 rd_err_df,
                                 month_start_growing_season=5,
-                                month_end_growing_season=10){
+                                month_end_growing_season=10,
+                                growing_season_definition="fixed_months", #or"meteorological", or "soil_temp", or "soil_temp_mean"
+                                df_Ta = NULL,
+                                df_Ts = NULL,
+                                number_consec_days=7
+                                ){
+
+
+  #First, lets identify the growing season periods if the growing_season_definition is "meteorological"
+
+  if(growing_season_definition == "meteorological" & !is.null(df_Ta)){
+    gs_info <- growing_season_definer(df=df_Ta, time_col="date", Ta_col="Ta", number_consec_days=number_consec_days)
+  }
+
+  if(growing_season_definition == "soil_temp" & !is.null(df_Ts)){
+    gs_info <- growing_season_definer(df=df_Ts, time_col="date", Ta_col="Ts_ampl", Ta_day_threshold=0.1, number_consec_days=number_consec_days)
+  }
+
+  if(growing_season_definition == "soil_temp_mean" & !is.null(df_Ts)){
+    gs_info <- growing_season_definer(df=df_Ts, time_col="date", Ta_col="Ts_mean", Ta_day_threshold=2, number_consec_days=number_consec_days)
+  }
+
 
 
   aggr_list <- list()
@@ -157,22 +183,49 @@ co2_flux_aggregator <- function(path_to_df_f,
   rd_err_co2_final$year <- lubridate::year(rd_err_co2_final[,"datetime"])
   rd_err_co2_final$month <- lubridate::month(rd_err_co2_final[,"datetime"])
   rd_err_co2_final$growing_season <- NA
-  for(yr in unique(rd_err_co2_final$year)){
-    rd_err_co2_final$growing_season[which(rd_err_co2_final$month %in% c(month_start_growing_season:month_end_growing_season) & rd_err_co2_final$year==yr)] <- paste("Growing season", yr, sep= " ")
-    #rd_err_co2_final$growing_season[which(!(rd_err_co2_final$month %in% c(month_start_growing_season:month_end_growing_season)) & rd_err_co2_final$year==yr)] <-  paste("Non growing season", yr, sep= " ")
-    rd_err_co2_final$growing_season[which((rd_err_co2_final$month < month_start_growing_season) & rd_err_co2_final$year==yr)] <-  paste("Non growing season1", yr, sep= " ")
-    rd_err_co2_final$growing_season[which((rd_err_co2_final$month > month_end_growing_season) & rd_err_co2_final$year==yr)] <-  paste("Non growing season2", yr, sep= " ")
-  }
-
 
   df_mc$year <- lubridate::year(df_mc[,"datetime"])
   df_mc$month <- lubridate::month(df_mc[,"datetime"])
   df_mc$growing_season <- NA
-  for(yr in unique(df_mc$year)){
-    df_mc$growing_season[which(df_mc$month %in% c(month_start_growing_season:month_end_growing_season) & df_mc$year==yr)] <- paste("Growing season", yr, sep= " ")
-    #df_mc$growing_season[which(!(df_mc$month %in% c(month_start_growing_season:month_end_growing_season)) & df_mc$year==yr)] <-  paste("Non growing season", yr, sep= " ")
-    df_mc$growing_season[which((df_mc$month < month_start_growing_season) & df_mc$year==yr)] <-  paste("Non growing season1", yr, sep= " ")
-    df_mc$growing_season[which((df_mc$month > month_end_growing_season) & df_mc$year==yr)] <-  paste("Non growing season2", yr, sep= " ")
+
+  if(growing_season_definition == "fixed_months"){
+    for(yr in unique(rd_err_co2_final$year)){
+      rd_err_co2_final$growing_season[which(rd_err_co2_final$month %in% c(month_start_growing_season:month_end_growing_season) & rd_err_co2_final$year==yr)] <- paste("Growing season", yr, sep= " ")
+      #rd_err_co2_final$growing_season[which(!(rd_err_co2_final$month %in% c(month_start_growing_season:month_end_growing_season)) & rd_err_co2_final$year==yr)] <-  paste("Non growing season", yr, sep= " ")
+      rd_err_co2_final$growing_season[which((rd_err_co2_final$month < month_start_growing_season) & rd_err_co2_final$year==yr)] <-  paste("Non growing season1", yr, sep= " ")
+      rd_err_co2_final$growing_season[which((rd_err_co2_final$month > month_end_growing_season) & rd_err_co2_final$year==yr)] <-  paste("Non growing season2", yr, sep= " ")
+    }
+
+    for(yr in unique(df_mc$year)){
+      df_mc$growing_season[which(df_mc$month %in% c(month_start_growing_season:month_end_growing_season) & df_mc$year==yr)] <- paste("Growing season", yr, sep= " ")
+      #df_mc$growing_season[which(!(df_mc$month %in% c(month_start_growing_season:month_end_growing_season)) & df_mc$year==yr)] <-  paste("Non growing season", yr, sep= " ")
+      df_mc$growing_season[which((df_mc$month < month_start_growing_season) & df_mc$year==yr)] <-  paste("Non growing season1", yr, sep= " ")
+      df_mc$growing_season[which((df_mc$month > month_end_growing_season) & df_mc$year==yr)] <-  paste("Non growing season2", yr, sep= " ")
+    }
+
+  }
+
+
+  ######
+  if(growing_season_definition %in% c("meteorological", 'soil_temp', 'soil_temp_mean')){
+
+    for(yr in unique(rd_err_df$year)){
+      gs_start <- gs_info[gs_info$year == yr, "start"]
+      gs_end <- gs_info[gs_info$year == yr, "end"]
+      rd_err_co2_final[which(rd_err_co2_final$date >= gs_start & rd_err_co2_final$date <= gs_end &  rd_err_co2_final$year==yr), "growing_season"] <- paste("Growing season", yr, sep= " ")
+      #rd_err_df$growing_season[which(!(rd_err_df$month %in% c(month_start_growing_season:month_end_growing_season)) & rd_err_df$year==yr)] <-  paste("Non growing season", yr, sep= " ")
+      rd_err_co2_final[which(rd_err_co2_final$date < gs_start & rd_err_co2_final$year==yr),"growing_season"] <-  paste("Non growing season1", yr, sep= " ")
+      rd_err_co2_final[which((rd_err_co2_final$date > gs_end) & rd_err_co2_final$year==yr), "growing_season"] <-  paste("Non growing season2", yr, sep= " ")
+    }
+
+    for(yr in unique(df_mc$year)){
+      gs_start <- gs_info[gs_info$year == yr, "start"]
+      gs_end <- gs_info[gs_info$year == yr, "end"]
+      df_mc$growing_season[which(df_mc$date >= gs_start & df_mc$date <= gs_end & df_mc$year==yr)] <- paste("Growing season", yr, sep= " ")
+      #df_mc$growing_season[which(!(df_mc$month %in% c(month_start_growing_season:month_end_growing_season)) & df_mc$year==yr)] <-  paste("Non growing season", yr, sep= " ")
+      df_mc$growing_season[which(df_mc$date < gs_start & df_mc$year==yr)] <-  paste("Non growing season1", yr, sep= " ")
+      df_mc$growing_season[which(df_mc$date > gs_end & df_mc$year==yr)] <-  paste("Non growing season2", yr, sep= " ")
+    }
   }
 
 
@@ -383,6 +436,7 @@ co2_flux_aggregator <- function(path_to_df_f,
   aggr_list$flux_df_month <- flux_df_f_month
   aggr_list$flux_df_growing_season <- flux_df_f_gs
   aggr_list$flux_df_year <- flux_df_f_year
+  if(growing_season_definition %in% c("meteorological", "soil_temp", "soil_temp_mean")) aggr_list$growing_season_info <- gs_info
 
   return(aggr_list)
 

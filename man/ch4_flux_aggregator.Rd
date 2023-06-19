@@ -11,7 +11,9 @@ ch4_flux_aggregator(
   month_start_growing_season = 5,
   month_end_growing_season = 10,
   growing_season_definition = "fixed_months",
-  df_Ta = NULL
+  df_Ta = NULL,
+  df_Ts = NULL,
+  number_consec_days = 7
 )
 }
 \arguments{
@@ -29,9 +31,13 @@ ch4_flux_aggregator(
 "meteorological" will use air temperature data to calculate the growing season start and end dates. This option requires to provide a dataframe containing date and air temperature data.}
 
 \item{df_Ta}{a dataframe containing 2 columns: a column named "date" containing dates, and a column named "Ta" containing daily average air temperatures}
+
+\item{df_Ts}{a dataframe containing 2 columns: a PosiXct column with timestamps in the format "%Y-%m-%d %H:%M:%S" and a column representing soil temperatures (e.g. Ts 15 cm☼)}
+
+\item{number_consec_days}{Minimum number of days used to define the growing season, for which air temperature, soil temperature or soil temperature amplitude remains above a set threshold}
 }
 \value{
-a list of half-hourly, hourly, daily, weekly, monthly and yearly aggregated flux dataframes
+a list of half-hourly, hourly, daily, weekly, monthly, growing season and yearly aggregated flux dataframes
 }
 \description{
 Aggregate methane fluxes and uncertainties (measurement and gapfilling related) to 30min, daily, monthly and yearly

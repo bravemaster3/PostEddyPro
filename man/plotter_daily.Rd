@@ -14,7 +14,8 @@ plotter_daily(
   Reco = FALSE,
   NEE = FALSE,
   yintercept_line = FALSE,
-  yintercept_value = 0
+  yintercept_value = 0,
+  scale_x = "month_only"
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ plotter_daily(
 \item{yintercept_line}{logical. If TRUE, a horizontal line will be added. default is FALSE}
 
 \item{yintercept_value}{positive integer. specifies the y value at which the horizonal line will be drawn. default is 0}
+
+\item{scale_x}{One of "month_only or "month_year", default is month_only}
 }
 \value{
 a ggplot object

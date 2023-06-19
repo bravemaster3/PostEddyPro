@@ -10,10 +10,23 @@
 #' @param NEE logical. If TRUE, the graph us then tailored for NEE. default is FALSE
 #' @param yintercept_line logical. If TRUE, a horizontal line will be added. default is FALSE
 #' @param yintercept_value positive integer. specifies the y value at which the horizonal line will be drawn. default is 0
+#' @param scale_x One of "month_only or "month_year", default is month_only
 #'
 #' @return a ggplot object
 #' @export
-plotter_daily <- function(list_df, y_label, y_col = "FCH4_sum", show_x_label=FALSE, ignore_NA=TRUE, GPP=FALSE, Reco=FALSE, NEE=FALSE, yintercept_line = FALSE, yintercept_value= 0){
+plotter_daily <- function(list_df,
+                          y_label,
+                          y_col = "FCH4_sum",
+                          show_x_label=FALSE,
+                          ignore_NA=TRUE,
+                          GPP=FALSE,
+                          Reco=FALSE,
+                          NEE=FALSE,
+                          yintercept_line = FALSE,
+                          yintercept_value = 0,
+                          scale_x = "month_only", #can also be "month_year'
+                          rotate_x_label = FALSE
+                          ){
 
   df <- Reduce(function(...) rbind(...), list_df)
   #if(y_col=="GPP_sum") df[df[,y_col] < 0 & !is.na(df[,y_col]), y_col] <- 0
@@ -60,15 +73,22 @@ plotter_daily <- function(list_df, y_label, y_col = "FCH4_sum", show_x_label=FAL
   g <- g+ #ggplot2::geom_smooth(method = "loess", span=0.05)+
     ggplot2:: ylab(y_label)+
     ggplot2::theme_classic()+
-    ggplot2::scale_x_date(breaks = "1 month", labels=scales::date_format("%b/%Y"))+
-    ggplot2::theme(panel.border = ggplot2::element_rect(fill=NA,size=1))+#,axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-    # facet_wrap(~ Site)+
-    #+
+    ggplot2::theme(panel.border = ggplot2::element_rect(fill=NA,size=1)) +
     ggplot2::theme(legend.position = c(0.85, 0.8), legend.background = ggplot2::element_rect(fill = "white", colour = "black", size=0.5,linetype = 2),
           legend.text=ggplot2::element_text(size=8),legend.title=ggplot2::element_blank(),legend.spacing.y = ggplot2::unit(0.01, 'cm'))
 
+  if(scale_x=="month_year"){
+    g <- g + ggplot2::scale_x_date(breaks = "1 month", labels=scales::date_format("%b/%Y"))
+  }
+
+  if(scale_x=="month_only"){
+    g <- g + ggplot2::scale_x_date(date_breaks = "1 month", labels = dte_formatter, expand = c(0,0))
+  }
+
   if(isTRUE(show_x_label)){
-    g <- g + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90))
+    if(isTRUE(rotate_x_label)){
+      g <- g + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90))
+    }
   }
 
   if(isFALSE(show_x_label)){
