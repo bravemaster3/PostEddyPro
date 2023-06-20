@@ -1,15 +1,15 @@
 
-#' Aggregate methane fluxes and uncertainties (measurement and gapfilling related) to 30min, daily, monthly and yearly
+#' Aggregate methane fluxes and uncertainties <measurement and gapfilling related> to 30min, daily, monthly and yearly
 #'
 #' @param flux_df flux dataframe output from the random forest gapfilling
 #' @param df_mc dataframe of merged montecarlo simulation already gapfilled
 #' @param rd_err_df dataframe containing random errors already imputed
 #' @param month_start_growing_season Month of the start of growing season. Default is 5
 #' @param month_end_growing_season Month of the end of growing season. Default is 10
-#' @param growing_season_definition The way growing season is definied. "fixed_months" (default) will use the months between month_start_growing_season and month_end_growing_season.
+#' @param growing_season_definition The way growing season is definied. "fixed_months" <default> will use the months between month_start_growing_season and month_end_growing_season.
 #' "meteorological" will use air temperature data to calculate the growing season start and end dates. This option requires to provide a dataframe containing date and air temperature data.
 #' @param df_Ta a dataframe containing 2 columns: a column named "date" containing dates, and a column named "Ta" containing daily average air temperatures
-#' @param df_Ts a dataframe containing 2 columns: a PosiXct column with timestamps in the format "%Y-%m-%d %H:%M:%S" and a column representing soil temperatures (e.g. Ts 15 cm☼)
+#' @param df_Ts a dataframe containing 2 columns: a PosiXct column with timestamps in the format "%Y-%m-%d %H:%M:%S" and a column representing soil temperatures <e.g. Ts 15 cm>
 #' @param number_consec_days Minimum number of days used to define the growing season, for which air temperature, soil temperature or soil temperature amplitude remains above a set threshold
 #'
 #' @return a list of half-hourly, hourly, daily, weekly, monthly, growing season and yearly aggregated flux dataframes
