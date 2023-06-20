@@ -10,7 +10,7 @@
 daily_temperature_amplitude <- function(df,
                                         time_col,
                                         T_col){
-    df_sel <- df %>% select(dplyr::one_of(c(time_col, T_col)))
+    df_sel <- df %>% dplyr::select(dplyr::one_of(c(time_col, T_col)))
     names(df_sel) = c("datetime", "Ts")
     df_aggr <- df_sel %>%
       dplyr::mutate(date=as.Date(datetime)) %>%

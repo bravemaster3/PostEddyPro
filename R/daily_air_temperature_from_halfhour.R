@@ -10,7 +10,7 @@
 daily_air_temperature_from_halfhour <- function(df,
                                   time_col,
                                   Ta_col){
-  df_sel <- df %>% select(dplyr::one_of(c(time_col, Ta_col)))
+  df_sel <- df %>% dplyr::select(dplyr::one_of(c(time_col, Ta_col)))
   names(df_sel) = c("datetime", "Ta")
   df_aggr <- df_sel %>%
     dplyr::mutate(date=as.Date(datetime)) %>%
