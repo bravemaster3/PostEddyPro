@@ -5,6 +5,7 @@
 #' @param T_col the name of the temperature column
 #'
 #' @return a dataframe containing daily values of daily temperature amplitude, and the mean soil temperature#' @export
+#' @export
 #'
 daily_temperature_amplitude <- function(df,
                                         time_col,
