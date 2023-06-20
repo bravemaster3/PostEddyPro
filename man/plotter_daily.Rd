@@ -15,7 +15,8 @@ plotter_daily(
   NEE = FALSE,
   yintercept_line = FALSE,
   yintercept_value = 0,
-  scale_x = "month_only"
+  scale_x = "month_only",
+  rotate_x_label = FALSE
 )
 }
 \arguments{
