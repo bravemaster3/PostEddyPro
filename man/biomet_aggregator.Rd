@@ -36,12 +36,12 @@ biomet_aggregator(
 
 \item{na.rm_val}{logical, TRUE if you want NAs to be ignored. Note that this means that sums may be calculated even when there are missing values, which is misleading.}
 
-\item{growing_season_definition}{The way growing season is definied. "fixed_months" (default) will use the months between month_start_growing_season and month_end_growing_season.
+\item{growing_season_definition}{The way growing season is definied. "fixed_months" <default> will use the months between month_start_growing_season and month_end_growing_season.
 "meteorological" will use air temperature data to calculate the growing season start and end dates. This option requires to provide a dataframe containing date and air temperature data.}
 
 \item{df_Ta}{a dataframe containing 2 columns: a column named "date" containing dates, and a column named "Ta" containing daily average air temperatures}
 
-\item{df_Ts}{a dataframe containing 2 columns: a PosiXct column with timestamps in the format "%Y-%m-%d %H:%M:%S" and a column representing soil temperatures (e.g. Ts 15 cm☼)}
+\item{df_Ts}{a dataframe containing 2 columns: a PosiXct column with timestamps in the format "%Y-%m-%d %H:%M:%S" and a column representing soil temperatures <e.g. Ts 15 cm>}
 
 \item{number_consec_days}{Minimum number of days used to define the growing season, for which air temperature, soil temperature or soil temperature amplitude remains above a set threshold}
 }
