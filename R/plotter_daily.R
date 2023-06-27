@@ -71,7 +71,7 @@ plotter_daily <- function(list_df,
     }
 
   }else{
-    g <- g + ggplot2::geom_smooth(data = df2, method = "loess", span=0.1)
+    g <- g + ggplot2::geom_smooth(data = df2, method = "loess", span=0.1, alpha = 0.01, se = conf_int)
   }
   g <- g+ #ggplot2::geom_smooth(method = "loess", span=0.05)+
     ggplot2:: ylab(y_label)+
