@@ -11,6 +11,8 @@
 #' @param yintercept_line logical. If TRUE, a horizontal line will be added. default is FALSE
 #' @param yintercept_value positive integer. specifies the y value at which the horizonal line will be drawn. default is 0
 #' @param scale_x One of "month_only or "month_year", default is month_only
+#' @param rotate_x_label Logical. default, FALSE
+#' @param conf_int Logical. Display a ribbon confidence interval around the smoothed lines. default, TRUE.
 #'
 #' @return a ggplot object
 #' @export
@@ -25,7 +27,8 @@ plotter_daily <- function(list_df,
                           yintercept_line = FALSE,
                           yintercept_value = 0,
                           scale_x = "month_only", #can also be "month_year'
-                          rotate_x_label = FALSE
+                          rotate_x_label = FALSE,
+                          conf_int = TRUE
                           ){
 
   df <- Reduce(function(...) rbind(...), list_df)
@@ -62,7 +65,7 @@ plotter_daily <- function(list_df,
     for(i in unique(df2$bloc)){
       #print(paste0("this is the current na_y"," : ", unique(df2[df2$bloc==i,"na_y"])))
       if(unique(df2[df2$bloc==i,"na_y"])==1){
-        g <- g + ggplot2::geom_smooth(data = df2[df2$bloc==i,],method = "loess", span=0.05, alpha = 0.01)
+        g <- g + ggplot2::geom_smooth(data = df2[df2$bloc==i,],method = "loess", span=0.05, alpha = 0.01, se = conf_int)
         #print(g)
       }
     }

@@ -16,7 +16,8 @@ plotter_daily(
   yintercept_line = FALSE,
   yintercept_value = 0,
   scale_x = "month_only",
-  rotate_x_label = FALSE
+  rotate_x_label = FALSE,
+  conf_int = TRUE
 )
 }
 \arguments{
@@ -41,6 +42,10 @@ plotter_daily(
 \item{yintercept_value}{positive integer. specifies the y value at which the horizonal line will be drawn. default is 0}
 
 \item{scale_x}{One of "month_only or "month_year", default is month_only}
+
+\item{rotate_x_label}{Logical. default, FALSE}
+
+\item{conf_int}{Logical. Display a ribbon confidence interval around the smoothed lines. default, TRUE.}
 }
 \value{
 a ggplot object
