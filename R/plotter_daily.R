@@ -62,7 +62,7 @@ plotter_daily <- function(list_df,
     for(i in unique(df2$bloc)){
       #print(paste0("this is the current na_y"," : ", unique(df2[df2$bloc==i,"na_y"])))
       if(unique(df2[df2$bloc==i,"na_y"])==1){
-        g <- g + ggplot2::geom_smooth(data = df2[df2$bloc==i,],method = "loess", span=0.05)
+        g <- g + ggplot2::geom_smooth(data = df2[df2$bloc==i,],method = "loess", span=0.05, alpha = 0.01)
         #print(g)
       }
     }
