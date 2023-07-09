@@ -109,7 +109,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
 
   `%dopar%` <- foreach::`%dopar%`
 
-  pred_folds = foreach::foreach(fold = unique(df$folds), .packages = c("xgboost", "dplyr"), .combine = 'c') %dopar% {
+  pred_folds = foreach::foreach(fold = unique(df$folds), .packages = c("xgboost", "dplyr")) %dopar% {
 #https://stackoverflow.com/questions/66661306/how-to-parallelize-an-xgboost-fit
     message(paste0("........Starting FOLD:", fold,"........"))
 
@@ -143,13 +143,13 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
   foreach::registerDoSEQ()
 
   flux_col_pred = paste0(flux_col, '_predicted')
-  df[,flux_col_pred] <- pred_folds
+  df[,flux_col_pred] <- NA
 
-  # i = 0
-  # for (fold in unique(df$folds)){
-  #   i = i+1
-  #   df[df$folds==fold, flux_col_pred] <- pred_folds[[i]]
-  # }
+  i = 0
+  for (fold in unique(df$folds)){
+    i = i+1
+    df[df$folds==fold, flux_col_pred] <- pred_folds[[i]]
+  }
 
   message("........End of cross validation........")
 
@@ -202,7 +202,9 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
   #The logic here is that the new column will take measured values when they exist, and when they don't, use the predicted values to fill the gap!
   #We'll also add a quality column that makes it easy to know wether a value in the new column is original or gapfilled data.
   flux_col_var <- rlang::sym(flux_col)
-  site_df <- site_df %>% dplyr::mutate(ch4_flux_final_filled = ifelse(!is.na(!!flux_col_var),!!flux_col_var,predicted),
+  flux_col_pred_var <- rlang::sym(flux_col_pred)
+
+  site_df <- site_df %>% dplyr::mutate(!!flux_col_pred_var = ifelse(!is.na(!!flux_col_var),!!flux_col_var,predicted),
                                        quality = ifelse(!is.na(!!flux_col_var),"original","gapfilled"))
 
   ######
@@ -224,8 +226,8 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
     ggplot2::geom_point(size=0.3)+
     ggplot2::theme_bw()+
     ggplot2::geom_abline(slope=1,intercept = 0, color="red")+
-    ggplot2::xlab("Obs. CH4 (umol.m-2.s-1)")+  #("Obs. CH4 (mg.m-2.30min-1)")+
-    ggplot2::ylab("Pred. CH4 (umol.m-2.s-1)")+ #("Pred. CH4 (mg.m-2.30min-1)")+
+    ggplot2::xlab("Obs. Flux (umol.m-2.s-1)")+  #("Obs. Flux (mg.m-2.30min-1)")+
+    ggplot2::ylab("Pred. Flux (umol.m-2.s-1)")+ #("Pred. Flux (mg.m-2.30min-1)")+
     ggplot2::annotate(geom="text", label=paste(sitename,", ", "r_sq=", round(r_sq,2), "\n", "rmse=",round(rmse,5), sep=""),
                       x=-Inf,y=Inf, hjust = 0, vjust = 1, color="red") +
     ggplot2::theme(panel.border = ggplot2::element_rect(fill=NA,colour="black",size=1.5)) +
@@ -233,14 +235,14 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
 
 
 
-  output_list$gf_meas_time <- ggplot2::ggplot(data=output_list$site_df, ggplot2::aes_string(x=datetime,y="ch4_flux_final_filled",color="quality"))+
+  output_list$gf_meas_time <- ggplot2::ggplot(data=output_list$site_df, ggplot2::aes_string(x=datetime,y=flux_col_pred,color="quality"))+
     ggplot2::geom_point(size=0.3)+
     ggplot2::theme_classic()+
     ggplot2::scale_color_manual(values=c("red", "black"))+
     ggplot2::geom_abline(slope=1,intercept = 0, color="red")+
     ggplot2::xlab("Datetime")+
-    ggplot2::ylab("CH4 (umol.m-2.s-1)")+  #("CH4 (mg.m-2.30min-1)")+
-    ggplot2::ylim(-0.005,stats::quantile(site_df[,"ch4_flux_final_filled"], 0.999))+
+    ggplot2::ylab("Flux (umol.m-2.s-1)")+  #("Flux (mg.m-2.30min-1)")+
+    ggplot2::ylim(-0.005,stats::quantile(site_df[,flux_col_pred], 0.999))+
     ggplot2::scale_x_datetime(breaks="1 month", date_labels ="%b")+
     ggplot2::annotate(geom="text", label=sitename,
                       x=min(site_df[,datetime]),y=Inf, hjust = 0, vjust = 1, color="red")+
