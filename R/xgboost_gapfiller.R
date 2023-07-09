@@ -16,8 +16,9 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
                          preds, #a vector of predictor variables, with default the previous vector created
                          sitename #This variable is simply for annotating the plots with the site name.
 ){
-  # if(is.null(max_mtry) | max_mtry <= 0 | max_mtry > length(preds)) max_mtry <- ceiling(max(sqrt(length(preds)), length(preds)/3)) #calculates maxtry knowing the length of preds
-  # if(is.null(max_mtry)) max_mtry <- ceiling(max(sqrt(length(preds)), length(preds)/3)) #calculates maxtry knowing the length of preds
+
+  message(paste0("!!!!XGBoost gapfilling started at: ", Sys.time()))
+  message("This can take some time. Go get some coffee/tea!")
 
   folds <- predicted <- NULL
   site_df <- PostEddyPro::temporal_calculators(site_df,datetime = datetime)
@@ -34,27 +35,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
   df <- data.frame(df)
   df[,datetime] <- time_obj
 
-
-  # set.seed(112233)
-  # library(parallel)
-  # # Calculate the number of cores
-  # no_cores <- detectCores() - 1
-  #
-  # library(doParallel)
-  # # create the cluster for caret to use
-  # cl <- makePSOCKcluster(no_cores)
-  # registerDoParallel(cl)
-  #
-  # # do your regular caret train calculation enabling
-  # # allowParallel = TRUE for the functions that do
-  # # use it as part of their implementation. This is
-  # # determined by the caret package.
-  #
-  # stopCluster(cl)
-  # registerDoSEQ()
-
-
-  no_cores <- parallel::detectCores() - 2
+  no_cores <- parallel::detectCores() - 1
   cl <- parallel::makePSOCKcluster(no_cores)
   doParallel::registerDoParallel(cl)
 
@@ -75,7 +56,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
     subsample = c(0.5, 0.75)#c(0.5, 0.75, 1.0) # used to prevent overfitting by sampling X% training
   )
 
-  message("........Starting Hyperparameter tuning with a grid and 10 fold cv........")
+  message(paste0("........Starting Hyperparameter tuning with a grid and 10 fold cv: ", Sys.time()))
   m <- caret::train(stats::as.formula(formula),
                     data = df,
                     trControl = tc,
@@ -83,7 +64,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
                     tuneGrid = grid_tune,
                     verbose = FALSE) #this is for finding the best mtry value to use
 
-  message("........End of Hyperparameter tuning........")
+  message(paste0("........End of Hyperparameter tuning: ", Sys.time()))
 
   parallel::stopCluster(cl)
   foreach::registerDoSEQ()
@@ -105,13 +86,11 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
   cl <- parallel::makePSOCKcluster(no_cores)
   doParallel::registerDoParallel(cl)
 
-  message("........Using now the best hyperparameters to gapfill each of the 10 folds........")
+  message(paste0("........Using now the best hyperparameters to gapfill each of the 10 folds: ", Sys.time()))
 
   `%dopar%` <- foreach::`%dopar%`
 
   pred_folds = foreach::foreach(fold = unique(df$folds), .packages = c("xgboost", "dplyr")) %dopar% {
-#https://stackoverflow.com/questions/66661306/how-to-parallelize-an-xgboost-fit
-    message(paste0("........Starting FOLD:", fold,"........"))
 
     df_subset=df %>% dplyr::filter(folds!=fold) #Since this is the training, I exclude the current fold
     xgb_train = xgboost::xgb.DMatrix(data = as.matrix(df_subset %>% dplyr::select(-dplyr::one_of(c(flux_col, datetime, "folds")))),
@@ -142,7 +121,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
   parallel::stopCluster(cl)
   foreach::registerDoSEQ()
 
-  flux_col_pred = paste0(flux_col, '_predicted')
+  flux_col_pred = paste0(flux_col, '_filled')
   df[,flux_col_pred] <- NA
 
   i = 0
@@ -151,7 +130,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
     df[df$folds==fold, flux_col_pred] <- pred_folds[[i]]
   }
 
-  message("........End of cross validation........")
+  message(paste0("........End of cross validation: ", Sys.time()))
 
 
   #Let's calculate the out of sample metrics for the plot
@@ -168,7 +147,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
   xgb_train_all = xgboost::xgb.DMatrix(data = as.matrix(df %>% dplyr::select(-dplyr::one_of(c(flux_col, datetime, "folds", flux_col_pred)))),
                           label = as.matrix(df %>% dplyr::select(dplyr::one_of(flux_col))))
 
-  message("........Starting training the final model on all the dataset........")
+  message(paste0("........Starting training the final model on all the dataset: ", Sys.time()))
 
   xgb_final <- xgboost::xgb.train(
     params = list(booster = "gbtree",
@@ -185,8 +164,8 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
     verbose = 0
   )
 
-  message("........End of training the final model........")
-  message("........Beginning prediction with the final model........")
+  message(paste0("........End of training the final model: ", Sys.time()))
+  message(paste0("........Beginning prediction with the final model ", Sys.time()))
   #Let's  all gaps now
 
   site_df$predicted <- stats::predict(xgb_final, newdata = xgboost::xgb.DMatrix(as.matrix(sapply(df_with_na %>%
@@ -194,7 +173,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
 
   # stats::predict(xgb, newdata = xgboost::xgb.DMatrix(as.matrix(sapply(df[df$folds==fold,] %>%
   #                                                                       dplyr::select(-dplyr::one_of(c(flux_col, datetime, "folds"))), as.numeric))))
-  message("........End of prediction with the final model........")
+  message(paste0("........End of prediction with the final model: ", Sys.time()))
   #and we can now take the values for filling the gaps
 
   #If the original flux data is available, we take that one for the new column. If instead it is missing, we use the predicted
@@ -242,12 +221,13 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
     ggplot2::geom_abline(slope=1,intercept = 0, color="red")+
     ggplot2::xlab("Datetime")+
     ggplot2::ylab("Flux (umol.m-2.s-1)")+  #("Flux (mg.m-2.30min-1)")+
-    ggplot2::ylim(-0.005,stats::quantile(site_df[,flux_col_pred], 0.999))+
+    ggplot2::ylim(stats::quantile(site_df[,flux_col_pred], 0.01),stats::quantile(site_df[,flux_col_pred], 0.999))+
     ggplot2::scale_x_datetime(breaks="1 month", date_labels ="%b")+
     ggplot2::annotate(geom="text", label=sitename,
                       x=min(site_df[,datetime]),y=Inf, hjust = 0, vjust = 1, color="red")+
     ggplot2::theme(legend.position = c(0.9,0.8), panel.border = ggplot2::element_rect(fill=NA,colour="black",size=1.5))
 
+  message(paste0("!!!!XGBoost gapfilling completed at: ", Sys.time()))
   return(output_list) #Now we can return everything needed for use outside the function
 
 }
