@@ -204,7 +204,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
   flux_col_var <- rlang::sym(flux_col)
   flux_col_pred_var <- rlang::sym(flux_col_pred)
 
-  site_df <- site_df %>% dplyr::mutate(!!flux_col_pred_var = ifelse(!is.na(!!flux_col_var),!!flux_col_var,predicted),
+  site_df <- site_df %>% dplyr::mutate(!!flux_col_pred_var := ifelse(!is.na(!!flux_col_var),!!flux_col_var,predicted),
                                        quality = ifelse(!is.na(!!flux_col_var),"original","gapfilled"))
 
   ######
