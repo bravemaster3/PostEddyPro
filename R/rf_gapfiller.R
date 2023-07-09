@@ -1,4 +1,4 @@
-#' A randomForest gapfiller, with an integrated training-testing from caret
+#' A randomForest gapfiller, with an integrated tuning-training-testing from caret
 #'
 #' @param site_df dataframe containing all a POSIXct timestamp, the flux data and predictor columns (preds argument).
 #' @param datetime name of the timestamp (datetime) column already in POSIXct format
