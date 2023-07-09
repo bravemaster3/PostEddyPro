@@ -109,7 +109,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
 
   `%dopar%` <- foreach::`%dopar%`
 
-  pred_folds = foreach::foreach(fold = unique(df$folds), .packages = c("xgboost", "dplyr")) %dopar% {
+  pred_folds = foreach::foreach(fold = unique(df$folds), .packages = c("xgboost", "dplyr"), .combine = 'c') %dopar% {
 #https://stackoverflow.com/questions/66661306/how-to-parallelize-an-xgboost-fit
     message(paste0("........Starting FOLD:", fold,"........"))
 
@@ -143,13 +143,13 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
   foreach::registerDoSEQ()
 
   flux_col_pred = paste0(flux_col, '_predicted')
-  df[,flux_col_pred] <- NA
+  df[,flux_col_pred] <- pred_folds
 
-  i = 0
-  for (fold in unique(df$folds)){
-    i = i+1
-    df[df$folds==fold, flux_col_pred] <- pred_folds[[i]]
-  }
+  # i = 0
+  # for (fold in unique(df$folds)){
+  #   i = i+1
+  #   df[df$folds==fold, flux_col_pred] <- pred_folds[[i]]
+  # }
 
   message("........End of cross validation........")
 
