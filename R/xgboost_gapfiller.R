@@ -62,7 +62,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
     eta = c(0.05,0.3),#c(0.025,0.05,0.1,0.3), #Learning rate
     gamma = c(0, 0.5),#c(0, 0.1, 0.5, 1.0), # pruning --> Should be tuned. i.e c(0, 0.05, 0.1, 0.5, 0.7, 0.9, 1.0)
     colsample_bytree = c(0.65, 0.75),#c(0.4, 0.6, 0.8, 1.0), #subsample ratio of columns for tree
-    min_child_weight = c(1,2,5),#c(1,2,3), # the larger, the more conservative the model is; can be used as a stop
+    min_child_weight = c(2,5),#c(1,2,3), # the larger, the more conservative the model is; can be used as a stop
     subsample = c(0.5, 0.75)#c(0.5, 0.75, 1.0) # used to prevent overfitting by sampling X% training
   )
 
