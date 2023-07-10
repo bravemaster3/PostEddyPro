@@ -46,14 +46,24 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
 
   formula <- paste(flux_col, "~" , paste(preds, collapse = " + ")) #this will create the string formula used in the random forest
 
+  # grid_tune <- expand.grid(
+  #   nrounds = c(500,1000, 1500),#c(500,1000,1500), #number of trees
+  #   max_depth = c(3, 5, 10, 15),#c(2,4,6),
+  #   eta = c(0.05,0.3),#c(0.025,0.05,0.1,0.3), #Learning rate
+  #   gamma = c(0, 0.5),#c(0, 0.1, 0.5, 1.0), # pruning --> Should be tuned. i.e c(0, 0.05, 0.1, 0.5, 0.7, 0.9, 1.0)
+  #   colsample_bytree = c(0.65, 0.75, 1),#c(0.4, 0.6, 0.8, 1.0), #subsample ratio of columns for tree
+  #   min_child_weight = c(1,2,5),#c(1,2,3), # the larger, the more conservative the model is; can be used as a stop
+  #   subsample = c(0.4, 0.6, 0.8, 1)#c(0.5, 0.75, 1.0) # used to prevent overfitting by sampling X% training
+  # )
+
   grid_tune <- expand.grid(
     nrounds = c(500,1000, 1500),#c(500,1000,1500), #number of trees
-    max_depth = c(3, 5, 10, 15),#c(2,4,6),
+    max_depth = c(5, 10, 15),#c(2,4,6),
     eta = c(0.05,0.3),#c(0.025,0.05,0.1,0.3), #Learning rate
     gamma = c(0, 0.5),#c(0, 0.1, 0.5, 1.0), # pruning --> Should be tuned. i.e c(0, 0.05, 0.1, 0.5, 0.7, 0.9, 1.0)
-    colsample_bytree = c(0.65, 0.75, 1),#c(0.4, 0.6, 0.8, 1.0), #subsample ratio of columns for tree
+    colsample_bytree = c(0.65, 0.75),#c(0.4, 0.6, 0.8, 1.0), #subsample ratio of columns for tree
     min_child_weight = c(1,2,5),#c(1,2,3), # the larger, the more conservative the model is; can be used as a stop
-    subsample = c(0.4, 0.6, 0.8, 1)#c(0.5, 0.75, 1.0) # used to prevent overfitting by sampling X% training
+    subsample = c(0.5, 0.75)#c(0.5, 0.75, 1.0) # used to prevent overfitting by sampling X% training
   )
 
   message(paste0("........Starting Hyperparameter tuning with a grid and 10 fold cv: ", Sys.time()))
@@ -221,7 +231,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
     ggplot2::geom_abline(slope=1,intercept = 0, color="red")+
     ggplot2::xlab("Datetime")+
     ggplot2::ylab("Flux (umol.m-2.s-1)")+  #("Flux (mg.m-2.30min-1)")+
-    ggplot2::ylim(stats::quantile(site_df[,flux_col_pred], 0.01),stats::quantile(site_df[,flux_col_pred], 0.999))+
+    ggplot2::ylim(stats::quantile(site_df[,flux_col_pred], 0.001),stats::quantile(site_df[,flux_col_pred], 0.999))+
     ggplot2::scale_x_datetime(breaks="1 month", date_labels ="%b")+
     ggplot2::annotate(geom="text", label=sitename,
                       x=min(site_df[,datetime]),y=Inf, hjust = 0, vjust = 1, color="red")+

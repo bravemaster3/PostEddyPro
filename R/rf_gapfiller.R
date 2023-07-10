@@ -186,7 +186,7 @@ rf_gapfiller <- function(site_df, #The dataframe containing all the flux data an
     ggplot2::geom_abline(slope=1,intercept = 0, color="red")+
     ggplot2::xlab("Datetime")+
     ggplot2::ylab("Flux (umol.m-2.s-1)")+  #("Flux (mg.m-2.30min-1)")+
-    ggplot2::ylim(stats::quantile(site_df[,flux_col_pred], 0.01),stats::quantile(site_df[,flux_col_pred], 0.999))+
+    ggplot2::ylim(stats::quantile(site_df[,flux_col_pred], 0.001),stats::quantile(site_df[,flux_col_pred], 0.999))+
     ggplot2::scale_x_datetime(breaks="1 month", date_labels ="%b")+
     ggplot2::annotate(geom="text", label=sitename,
              x=min(site_df[,datetime]),y=Inf, hjust = 0, vjust = 1, color="red")+
