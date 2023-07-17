@@ -1,4 +1,4 @@
-#' A wrapper for ReddyProc gapfiller for gapfilling NEE or H2O fluxes
+#' A wrapper for ReddyProc gapfiller for gapfilling NEE or H2O fluxes,and partitionning NEE
 #'
 #' @param formatted_file_path path to the file ready for ReddyProc gapfilling. Typically the output from the "formatting_fluxes_REddyProc" function of the PostEddyPro package
 #' @param saving_folder path to the folder where the gapfilled fluxes will be saved
@@ -7,6 +7,7 @@
 #' @param longitude longitude of the site
 #' @param latitude latitude of the site
 #' @param timezone timezone as a signed integer (e.g. 1 for UTC+1)
+#' @param gapfill_flux boolean. Default is TRUE. Set to false if gapfilling of NEE has been performed before and do only partitioning.
 #'
 #' @return No value returned, but a file saved to disk
 #' @export
@@ -16,7 +17,8 @@ reddyproc_gapfiller <- function(formatted_file_path,
                                 FLUX=c("NEE","H2O"), #either of them
                                 longitude=19.556646,
                                 latitude=64.181980,
-                                timezone=1){
+                                timezone=1,
+                                gapfill_flux=TRUE){
   #i=1 #turn on for testing
   EddyData.F <- REddyProc::fLoadTXTIntoDataframe(formatted_file_path)
 
@@ -35,7 +37,7 @@ reddyproc_gapfiller <- function(formatted_file_path,
   EddyProc.C$sMDSGapFill('Tair', FillAll=FALSE)  	# Gap-filled Tair needed for partitioning and gapfilling
   EddyProc.C$sMDSGapFill('VPD', FillAll=FALSE)  	# Gap-filled VPD needed for gapfilling
   EddyProc.C$sMDSGapFill('Rg', FillAll=FALSE)     #Fill only the gaps for the meteo condition, e.g. 'Rg'
-  EddyProc.C$sMDSGapFill(FLUX, FillAll=TRUE)     #Fill all values to estimate flux uncertainties
+  EddyProc.C$sMDSGapFill(FLUX, FillAll=gapfill_flux)     #Fill all values to estimate flux uncertainties
 
   #+++ Partition NEE into GPP and respiration
   if(FLUX == "NEE") EddyProc.C$sMRFluxPartition()	# night time partitioning -> Reco, GPP

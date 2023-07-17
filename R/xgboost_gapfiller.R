@@ -105,7 +105,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
     df_subset=df %>% dplyr::filter(folds!=fold) #Since this is the training, I exclude the current fold
     xgb_train = xgboost::xgb.DMatrix(data = as.matrix(df_subset %>% dplyr::select(-dplyr::one_of(c(flux_col, datetime, "folds")))),
                             label = as.matrix(df_subset %>% dplyr::select(dplyr::one_of(flux_col))))
-    #Let's train the random forest on all BUT the current fold
+    #Let's train the XGBoost model on all BUT the current fold
     xgb <- xgboost::xgb.train(
       params = list(booster = "gbtree",
                     objective="reg:squarederror",

@@ -2,7 +2,7 @@
 % Please edit documentation in R/reddyproc_gapfiller.R
 \name{reddyproc_gapfiller}
 \alias{reddyproc_gapfiller}
-\title{A wrapper for ReddyProc gapfiller for gapfilling NEE or H2O fluxes}
+\title{A wrapper for ReddyProc gapfiller for gapfilling NEE or H2O fluxes,and partitionning NEE}
 \usage{
 reddyproc_gapfiller(
   formatted_file_path,
@@ -11,7 +11,8 @@ reddyproc_gapfiller(
   FLUX = c("NEE", "H2O"),
   longitude = 19.556646,
   latitude = 64.18198,
-  timezone = 1
+  timezone = 1,
+  gapfill_flux = TRUE
 )
 }
 \arguments{
@@ -28,10 +29,12 @@ reddyproc_gapfiller(
 \item{latitude}{latitude of the site}
 
 \item{timezone}{timezone as a signed integer (e.g. 1 for UTC+1)}
+
+\item{gapfill_flux}{boolean. Default is TRUE. Set to false if gapfilling of NEE has been performed before and do only partitioning.}
 }
 \value{
 No value returned, but a file saved to disk
 }
 \description{
-A wrapper for ReddyProc gapfiller for gapfilling NEE or H2O fluxes
+A wrapper for ReddyProc gapfiller for gapfilling NEE or H2O fluxes,and partitionning NEE
 }
