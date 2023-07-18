@@ -37,7 +37,7 @@ co2_flux_aggregator <- function(path_to_df_f,
   }
 
   if(growing_season_definition == "soil_temp_mean" & !is.null(df_Ts)){
-    gs_info <- growing_season_definer(df=df_Ts, time_col="date", Ta_col="Ts_mean", Ta_day_threshold=2, number_consec_days=number_consec_days)
+    gs_info <- growing_season_definer(df=df_Ts, time_col="date", Ta_col="Ts_mean", Ta_day_threshold=1, number_consec_days=number_consec_days)
   }
 
 
