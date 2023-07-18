@@ -19,11 +19,12 @@ merge_montecarlo_sims <- function(gf_type = "rf", #alternatively "REddyProc"
 
   `%dopar%` <- foreach::`%dopar%`
 
+  datetime=datetime1
+  filled_flux_col=filled_flux_col1
+  gf_type2=gf_type
+
   datalist = foreach::foreach(file_path = list.files(dir,full.names = TRUE),
                               .packages = c("data.table", "dplyr", "stringr", "hms")) %dopar% {
-    datetime=datetime1
-    filled_flux_col=filled_flux_col1
-    gf_type2=gf_type
 
     if(gf_type2 == "rf"){
       df_i <- data.table::fread(file_path, header=TRUE,sep=",")
@@ -52,14 +53,14 @@ merge_montecarlo_sims <- function(gf_type = "rf", #alternatively "REddyProc"
     all_strings <- NA
     all_strings <- stringr::str_extract_all(basename(file_path),"\\(?[0-9]+\\)?")[[1]]#this is adapted when there is more than 1 number in the string
     df_i$iteration <- all_strings[length(all_strings)]#readr::parse_number(basename(file_path))
-    return(df_i)
+    return(data.table::setDT(df_i))
   }
 
   parallel::stopCluster(cl)
   foreach::registerDoSEQ()
 
   df_monte_carlo <- NULL
-  df_monte_carlo <- Reduce(function(x,y) {merge(x, y, all = TRUE)}, datalist)
+  df_monte_carlo <- Reduce(function(x,y) {data.table::merge.data.table(x, y, all = TRUE)}, datalist)
   df_mc_ordered  <- df_monte_carlo[order(df_monte_carlo[,datetime1], df_monte_carlo$iteration), ]
 
   data.table::fwrite(df_mc_ordered, file.path(saving_dir,"monte_carlo_all.csv"), dateTimeAs = "write.csv")
