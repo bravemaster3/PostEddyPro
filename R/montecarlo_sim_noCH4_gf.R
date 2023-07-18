@@ -22,6 +22,7 @@ montecarlo_sim_noCH4_gf <- function(mc_sim_path,
   all_sim <- list.files(path=mc_sim_path, full.names = TRUE)
 
   #!!
+  no_cores = parallel::detectCores() - 1
   cl <- parallel::makePSOCKcluster(no_cores)
   doParallel::registerDoParallel(cl)
   #!!
