@@ -10,7 +10,8 @@ montecarlo_sim_noCH4_gf(
   flux_col = c("NEE", "H2O"),
   longi = 19.556646,
   lati = 64.18198,
-  timez = 1
+  timez = 1,
+  gapfill_flux = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ montecarlo_sim_noCH4_gf(
 \item{lati}{latitude of the site}
 
 \item{timez}{timezone as a signed integer (e.g. 1 for UTC+1)}
+
+\item{gapfill_flux}{boolean. Default is TRUE. Set to false if gapfilling of NEE has been performed before and do only partitioning.}
 }
 \value{
 no value returned, but files are gapfilled and saved to disk

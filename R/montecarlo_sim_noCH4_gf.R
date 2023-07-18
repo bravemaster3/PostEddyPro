@@ -6,6 +6,7 @@
 #' @param longi longitude of the site
 #' @param lati latitude of the site
 #' @param timez timezone as a signed integer (e.g. 1 for UTC+1)
+#' @param gapfill_flux boolean. Default is TRUE. Set to false if gapfilling of NEE has been performed before and do only partitioning.
 #'
 #' @return no value returned, but files are gapfilled and saved to disk
 #' @export
@@ -14,23 +15,33 @@ montecarlo_sim_noCH4_gf <- function(mc_sim_path,
                                     flux_col=c("NEE","H2O"),
                                     longi=19.556646,
                                     lati=64.181980,
-                                    timez=1
+                                    timez=1,
+                                    gapfill_flux = TRUE
                                     ){
 
   all_sim <- list.files(path=mc_sim_path, full.names = TRUE)
 
+  #!!
+  cl <- parallel::makePSOCKcluster(no_cores)
+  doParallel::registerDoParallel(cl)
+  #!!
 
-  lapply(all_sim, function(x){
-    print(x)
-    base_name_x <- gsub("\\.","_gf.", basename(x))
+  `%dopar%` = foreach::`%dopar%`
+  useless_output = foreach::foreach(file = all_sim, .packages = c("PostEddyPro")) %dopar% {
+    base_name_x <- gsub("\\.","_gf.", basename(file))
 
-    reddyproc_gapfiller(formatted_file_path=x,
+    reddyproc_gapfiller(formatted_file_path=file,
                         saving_folder=mc_sim_gf_path,
                         file_name=base_name_x,
                         FLUX=flux_col,
                         longitude = longi,
                         latitude=lati,
-                        timezone = timez)
-  })
+                        timezone = timez,
+                        gapfill_flux = gapfill_flux)
+  }
 
+  #!!
+  parallel::stopCluster(cl)
+  foreach::registerDoSEQ()
+  #!!
 }

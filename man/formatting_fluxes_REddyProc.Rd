@@ -15,7 +15,8 @@ formatting_fluxes_REddyProc(
   rh_col = "RH_f",
   vpd_col = "VPD_f",
   ustar_col = "u*",
-  saving_path
+  saving_path,
+  filename = NULL
 )
 }
 \arguments{
@@ -41,6 +42,8 @@ If following the standard workflow, use the output from the quality check}
 \item{ustar_col}{u* column name}
 
 \item{saving_path}{saving folder path where the formatted file will be saved}
+
+\item{filename}{WITHOUT extension. name to be appended to saving_path to create full path name. If NULL, a default name will be written}
 }
 \value{
 No value returned, but a file saved to disk
