@@ -13,11 +13,18 @@ merge_montecarlo_sims <- function(gf_type = "rf", #alternatively "REddyProc"
                                   saving_dir,
                                   datetime1="datetime",
                                   filled_flux_col1="ch4_flux_final_filled"){
-  datalist <- lapply(list.files(dir,full.names = TRUE), FUN = function(file_path,
-                                                     datetime=datetime1,
-                                                     filled_flux_col=filled_flux_col1,
-                                                     gf_type2=gf_type
-  ){
+  no_cores = parallel::detectCores() - 1
+  cl <- parallel::makePSOCKcluster(no_cores)
+  doParallel::registerDoParallel(cl)
+
+  `%dopar%` <- foreach::`%dopar%`
+
+  datalist = foreach::foreach(file_path = list.files(dir,full.names = TRUE),
+                              .packages = c("data.table", "dplyr", "stringr", "hms")) %dopar% {
+    datetime=datetime1
+    filled_flux_col=filled_flux_col1
+    gf_type2=gf_type
+
     if(gf_type2 == "rf"){
       df_i <- data.table::fread(file_path, header=TRUE,sep=",")
       df_i[,datetime] <- as.POSIXct(df_i[,datetime], format="%Y-%m-%d %H:%M:%S",tz="UTC")
@@ -46,8 +53,10 @@ merge_montecarlo_sims <- function(gf_type = "rf", #alternatively "REddyProc"
     all_strings <- stringr::str_extract_all(basename(file_path),"\\(?[0-9]+\\)?")[[1]]#this is adapted when there is more than 1 number in the string
     df_i$iteration <- all_strings[length(all_strings)]#readr::parse_number(basename(file_path))
     return(df_i)
+  }
 
-  })
+  parallel::stopCluster(cl)
+  foreach::registerDoSEQ()
 
   df_monte_carlo <- NULL
   df_monte_carlo <- Reduce(function(x,y) {merge(x, y, all = TRUE)}, datalist)
