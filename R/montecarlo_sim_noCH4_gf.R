@@ -28,7 +28,7 @@ montecarlo_sim_noCH4_gf <- function(mc_sim_path,
   #!!
 
   `%dopar%` = foreach::`%dopar%`
-  useless_output = foreach::foreach(file = all_sim, .packages = c("PostEddyPro")) %dopar% {
+  useless_output = foreach::foreach(file = all_sim, .packages = c("REddyProc", "data.table", "utils")) %dopar% {
     base_name_x <- gsub("\\.","_gf.", basename(file))
 
     reddyproc_gapfiller(formatted_file_path=file,
