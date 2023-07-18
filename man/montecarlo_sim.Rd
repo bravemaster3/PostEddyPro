@@ -11,7 +11,8 @@ montecarlo_sim(
   datetime = "datetime",
   preds,
   n,
-  saving_folder
+  saving_folder,
+  flux_sign = "positive"
 )
 }
 \arguments{

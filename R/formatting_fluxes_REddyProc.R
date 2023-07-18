@@ -12,6 +12,7 @@
 #' @param vpd_col vapor pressure deficit column name
 #' @param ustar_col u* column name
 #' @param saving_path saving folder path where the formatted file will be saved
+#' @param filename WITHOUT extension. name to be appended to saving_path to create full path name. If NULL, a default name will be written
 #'
 #' @return No value returned, but a file saved to disk
 #' @export
@@ -25,7 +26,8 @@ formatting_fluxes_REddyProc <- function(df,
                                         rh_col = "RH_f",
                                         vpd_col = "VPD_f",#VPD must be in kpa
                                         ustar_col = "u*",
-                                        saving_path){
+                                        saving_path,
+                                        filename = NULL){
   df$Year <- lubridate::year(df[,datetime])
   df$DoY <- lubridate::yday(df[,datetime])
   df$Hour <- lubridate::hour(df[,datetime]) + lubridate::minute(df[,datetime])/60
@@ -52,7 +54,12 @@ formatting_fluxes_REddyProc <- function(df,
 
   units <- c("-", "-", "-",	unit_flux,	"Wm-2",	"Wm-2",	"Wm-2",	"degC",	"degC",	"%", "hPa",	"ms-1")
 
-  saving_file_name <- file.path(saving_path,  paste0("For_ReddyProc_", FLUX, ".txt"))
+  if(is.null(filename)) {
+    saving_file_name <- file.path(saving_path,  paste0("For_ReddyProc_", FLUX, ".txt"))
+  }else{
+    saving_file_name <- file.path(saving_path,  paste0(filename, ".txt"))
+  }
+
 
 
   #Creating the directory or removing it if it was already there.
