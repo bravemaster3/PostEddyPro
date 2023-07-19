@@ -10,7 +10,11 @@
 #' @export
 #'
 #'
-growing_season_definer <- function(df, time_col, Ta_col, Ta_day_threshold=5, number_consec_days=5){
+growing_season_definer <- function(df,
+                                   time_col,
+                                   Ta_col,
+                                   Ta_day_threshold=5,
+                                   number_consec_days=5){
   df$counter <- 0
   df$counter[df[[Ta_col]] > Ta_day_threshold] <- 1
   df$antiCounter <- 1 - df$counter

@@ -11,6 +11,8 @@
 #' @param df_Ta a dataframe containing 2 columns: a column named "date" containing dates, and a column named "Ta" containing daily average air temperatures
 #' @param df_Ts a dataframe containing 2 columns: a PosiXct column with timestamps in the format "\%Y-\%m-\%d \%H:\%M:\%S" and a column representing soil temperatures <e.g. Ts 15 cm>
 #' @param number_consec_days Minimum number of days used to define the growing season, for which air temperature, soil temperature or soil temperature amplitude remains above a set threshold
+#' @param Ts_ampl_thresh threshold of daily soil temperature amplitude when using that option for defining the growing season. default is 0.1°C
+#' @param Ts_mean_thresh threshold of daily mean soil temperature when using that option for defining the growing season. default is 2°C
 #'
 #' @return a list of half-hourly, hourly, daily, weekly, monthly, growing season and yearly aggregated flux dataframes
 #' @export
@@ -22,7 +24,9 @@ co2_flux_aggregator <- function(path_to_df_f,
                                 growing_season_definition="fixed_months", #or"meteorological", or "soil_temp", or "soil_temp_mean"
                                 df_Ta = NULL,
                                 df_Ts = NULL,
-                                number_consec_days=7
+                                number_consec_days=7,
+                                Ts_ampl_thresh = 0.1,
+                                Ts_mean_thresh = 2
                                 ){
 
 
@@ -33,11 +37,11 @@ co2_flux_aggregator <- function(path_to_df_f,
   }
 
   if(growing_season_definition == "soil_temp" & !is.null(df_Ts)){
-    gs_info <- growing_season_definer(df=df_Ts, time_col="date", Ta_col="Ts_ampl", Ta_day_threshold=0.1, number_consec_days=number_consec_days)
+    gs_info <- growing_season_definer(df=df_Ts, time_col="date", Ta_col="Ts_ampl", Ta_day_threshold=Ts_ampl_thresh, number_consec_days=number_consec_days)
   }
 
   if(growing_season_definition == "soil_temp_mean" & !is.null(df_Ts)){
-    gs_info <- growing_season_definer(df=df_Ts, time_col="date", Ta_col="Ts_mean", Ta_day_threshold=1, number_consec_days=number_consec_days)
+    gs_info <- growing_season_definer(df=df_Ts, time_col="date", Ta_col="Ts_mean", Ta_day_threshold=Ts_mean_thresh, number_consec_days=number_consec_days)
   }
 
 
