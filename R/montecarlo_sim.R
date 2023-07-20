@@ -17,7 +17,7 @@ montecarlo_sim <- function(df_gf, #the gapfilled flux dataframe. This would be r
                            preds, #same as used for gapfilling ("Ta_f","Ts_f","WTD_smooth","Pa_f","PARin_f","PARout_f","RH_f","VPD_f","P_f","yearly_sin","yearly_cos","delta")
                            n,
                            saving_folder,
-                           flux_sign = "positive"#positive or both
+                           flux_sign = "positive"#positive or both OR or empirical to use preexisting formula
 ){
 
   #initializing global variables
@@ -141,6 +141,30 @@ montecarlo_sim <- function(df_gf, #the gapfilled flux dataframe. This would be r
       }
 
     return(residual_list)
+  }
+
+  if(flux_sign == "empirical")
+  {
+    #Now, let's subset the non-gapfilled dataframe to only keep the datetime, flux column and predictors
+    df_sub <- df_gf[,c(datetime,flux_col, preds)]
+
+    for(i in 1:n){
+      df_sub_i <- df_sub
+      df_sub_i[,flux_col] <- unlist(lapply(df_sub[,flux_col], FUN=function(x) {
+
+        mod_flux <- NULL
+        if(x >= 0 & !is.na(x)){
+          mod_flux <-  x + PostEddyPro::laprnd(0,sigma=0.62+0.63*x)
+         } else if(x < 0 & !is.na(x)){
+          mod_flux <- x + PostEddyPro::laprnd(0,sigma=1.42-0.19*x)
+        } else{
+          mod_flux <- NA
+        }
+        return(mod_flux)
+      }))
+
+      data.table::fwrite(df_sub_i, file.path(saving_folder,paste0("output_", i, ".csv")),dateTimeAs = "write.csv")
+    }
   }
 }
 
