@@ -13,6 +13,7 @@
 #' @param number_consec_days Minimum number of days used to define the growing season, for which air temperature, soil temperature or soil temperature amplitude remains above a set threshold
 #' @param Ts_ampl_thresh threshold of daily soil temperature amplitude when using that option for defining the growing season. default is 0.1°C
 #' @param Ts_mean_thresh threshold of daily mean soil temperature when using that option for defining the growing season. default is 2°C
+#' @param datetime datetime column in both of your data.frames
 #'
 #' @return a list of half-hourly, hourly, daily, weekly, monthly, growing season and yearly aggregated flux dataframes
 #' @export
@@ -24,6 +25,7 @@ co2_flux_aggregator <- function(path_to_df_f,
                                 growing_season_definition="fixed_months", #or"meteorological", or "soil_temp", or "soil_temp_mean"
                                 df_Ta = NULL,
                                 df_Ts = NULL,
+                                datetime = "datetime",
                                 number_consec_days=7,
                                 Ts_ampl_thresh = 0.1,
                                 Ts_mean_thresh = 2
@@ -45,13 +47,19 @@ co2_flux_aggregator <- function(path_to_df_f,
   }
 
 
+#creating important columns that are missing
+  rd_err_df <- rd_err_df %>%
+    mutate(date = as.Date(datetime),
+           year = lubridate::year(datetime))
 
-  aggr_list <- list()
+  df_mc <- df_mc %>%
+    mutate(date = as.Date(datetime),
+           year = lubridate::year(datetime))
 
   ####################Aggregating random measurement error
 
   rd_err_co2_final <- rd_err_df %>%
-    dplyr::select(datetime, rand_err_co2_flux) %>%
+    dplyr::select(c(datetime, "rand_err_co2_flux")) %>%
     dplyr::mutate(rand_err_co2_flux=PostEddyPro::umolCO2m2s_to_gCm2_30min(rand_err_co2_flux)) %>%
     dplyr::rename(meas_err = rand_err_co2_flux)
 
@@ -69,7 +77,7 @@ co2_flux_aggregator <- function(path_to_df_f,
     dplyr::summarise(NEE_sd = stats::sd(NEE_f),
               GPP_sd = stats::sd(GPP_f),
               Reco_sd = stats::sd(Reco)) %>%
-    merge(rd_err_co2_final[,c("datetime","meas_err")], all=TRUE)
+    merge(rd_err_co2_final[,c(datetime,"meas_err")], all=TRUE)
 
   #fwrite(df_30min, "C:/BRAVE/slu/eddy_covariance/myphd/R_codes/halsingfors_for_Marcus/new_flow/monte_carlo/final/monte_carlo_CO2_30min_SD.csv", dateTimeAs = "write.csv")
 
@@ -184,12 +192,12 @@ co2_flux_aggregator <- function(path_to_df_f,
 
 
   #growing season
-  rd_err_co2_final$year <- lubridate::year(rd_err_co2_final[,"datetime"])
-  rd_err_co2_final$month <- lubridate::month(rd_err_co2_final[,"datetime"])
+  rd_err_co2_final$year <- lubridate::year(rd_err_co2_final[,datetime])
+  rd_err_co2_final$month <- lubridate::month(rd_err_co2_final[,datetime])
   rd_err_co2_final$growing_season <- NA
 
-  df_mc$year <- lubridate::year(df_mc[,"datetime"])
-  df_mc$month <- lubridate::month(df_mc[,"datetime"])
+  df_mc$year <- lubridate::year(df_mc[[datetime]])
+  df_mc$month <- lubridate::month(df_mc[[datetime]])
   df_mc$growing_season <- NA
 
   if(growing_season_definition == "fixed_months"){
@@ -293,7 +301,7 @@ co2_flux_aggregator <- function(path_to_df_f,
   flux_df_f$date <- as.Date(flux_df_f$DoY, origin = paste0(flux_df_f$Year-1,"-12-31"))
   flux_df_f$time <- hms::hms(hours=flux_df_f$Hour)
 
-  flux_df_f[,"datetime"] <- as.POSIXct(paste(flux_df_f$date,flux_df_f$time), format="%Y-%m-%d %H:%M:%S",tz="UTC")
+  flux_df_f[,datetime] <- as.POSIXct(paste(flux_df_f$date,flux_df_f$time), format="%Y-%m-%d %H:%M:%S",tz="UTC")
 
 
   flux_df_f <- flux_df_f %>%
@@ -313,8 +321,8 @@ co2_flux_aggregator <- function(path_to_df_f,
 
 
   flux_df_f_30min <- flux_df_f %>%
-    dplyr::select(c("datetime","NEE","NEE_f","GPP_f","Reco"))%>%
-    merge(df_30min, by="datetime", all=TRUE)%>%
+    dplyr::select(c(datetime,"NEE","NEE_f","GPP_f","Reco"))%>%
+    merge(df_30min, by=datetime, all=TRUE)%>%
     dplyr::rename(gapf_err=NEE_sd) %>%
     dplyr::mutate(quality = ifelse(!is.na(NEE),
                             "original",
@@ -328,7 +336,7 @@ co2_flux_aggregator <- function(path_to_df_f,
                                    sqrt(meas_err^2+gapf_err^2),
                                    NA)
     )) %>%
-    dplyr::select(c(datetime, NEE, NEE_f,quality,meas_err,gapf_err,tot_err,GPP_f,GPP_sd,Reco,Reco_sd))
+    dplyr::select(c(datetime, "NEE", "NEE_f","quality","meas_err","gapf_err","tot_err","GPP_f","GPP_sd","Reco","Reco_sd"))
 
   #fwrite(flux_df_f_30min, "C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/flux_df_f/Eddypro_output/flux_df_f_ReddyProc_GF_CO2_30min_NEW.csv", dateTimeAs = "write.csv")
 
@@ -402,8 +410,8 @@ co2_flux_aggregator <- function(path_to_df_f,
 
 
   #Growing season
-  flux_df_f$year <- lubridate::year(flux_df_f[,"datetime"])
-  flux_df_f$month <- lubridate::month(flux_df_f[,"datetime"])
+  flux_df_f$year <- lubridate::year(flux_df_f[,datetime])
+  flux_df_f$month <- lubridate::month(flux_df_f[,datetime])
   flux_df_f$growing_season <- NA
   for(yr in unique(flux_df_f$year)){
     flux_df_f$growing_season[which(flux_df_f$month %in% c(month_start_growing_season:month_end_growing_season) & flux_df_f$year==yr)] <- paste("Growing season", yr, sep= " ")

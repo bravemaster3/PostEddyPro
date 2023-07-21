@@ -13,6 +13,7 @@ ch4_flux_aggregator(
   growing_season_definition = "fixed_months",
   df_Ta = NULL,
   df_Ts = NULL,
+  datetime = "datetime",
   number_consec_days = 7,
   Ts_ampl_thresh = 0.1,
   Ts_mean_thresh = 2
@@ -35,6 +36,8 @@ ch4_flux_aggregator(
 \item{df_Ta}{a dataframe containing 2 columns: a column named "date" containing dates, and a column named "Ta" containing daily average air temperatures}
 
 \item{df_Ts}{a dataframe containing 2 columns: a PosiXct column with timestamps in the format "\%Y-\%m-\%d \%H:\%M:\%S" and a column representing soil temperatures <e.g. Ts 15 cm>}
+
+\item{datetime}{datetime column in both of your data.frames}
 
 \item{number_consec_days}{Minimum number of days used to define the growing season, for which air temperature, soil temperature or soil temperature amplitude remains above a set threshold}
 

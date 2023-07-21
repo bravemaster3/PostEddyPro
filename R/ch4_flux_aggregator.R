@@ -13,6 +13,7 @@
 #' @param number_consec_days Minimum number of days used to define the growing season, for which air temperature, soil temperature or soil temperature amplitude remains above a set threshold
 #' @param Ts_ampl_thresh threshold of daily soil temperature amplitude when using that option for defining the growing season. default is 0.1°C
 #' @param Ts_mean_thresh threshold of daily mean soil temperature when using that option for defining the growing season. default is 2°C
+#' @param datetime datetime column in both of your data.frames
 #'
 #' @return a list of half-hourly, hourly, daily, weekly, monthly, growing season and yearly aggregated flux dataframes
 #' @export
@@ -24,6 +25,7 @@ ch4_flux_aggregator <- function(flux_df,
                                 growing_season_definition="fixed_months", #or"meteorological", or "soil_temp", or "soil_temp_mean"
                                 df_Ta = NULL,
                                 df_Ts = NULL,
+                                datetime = "datetime",
                                 number_consec_days=7,
                                 Ts_ampl_thresh = 0.1,
                                 Ts_mean_thresh = 2
@@ -44,12 +46,22 @@ ch4_flux_aggregator <- function(flux_df,
     gs_info <- growing_season_definer(df=df_Ts, time_col="date", Ta_col="Ts_mean", Ta_day_threshold=Ts_mean_thresh, number_consec_days=number_consec_days)
   }
 
-
-
   #testing
   # flux_df = gapfilling_list_hals$site_df
   # df_mc = df_mc
   # rd_err_df = hals_err_df_imp
+
+  #creating important columns that are missing which creates problem in the aggregations (date and year)
+  rd_err_df <- rd_err_df %>%
+    mutate(date = as.Date(datetime),
+           year = lubridate::year(datetime),
+           month = lubridate::month(datetime))
+
+  df_mc <- df_mc %>%
+    mutate(date = as.Date(datetime),
+           year = lubridate::year(datetime),
+           month = lubridate::month(datetime))
+
 
   #initializing or "nulifying" global variables
   rand_err_ch4_flux <- datetime <- meas_err <- ch4_flux_final_filled <- FCH4_f <- iteration <- FCH4_sum <- year <- month <- FCH4_sd <- quality <- gapf_err <- tot_err <- FCH4 <- NULL
@@ -57,8 +69,8 @@ ch4_flux_aggregator <- function(flux_df,
   #converting the errors to mg...
   rd_err_df <- rd_err_df %>%
     dplyr::mutate(rand_err_ch4_flux = PostEddyPro::umolCH4m2s_to_mgCH4m2_30min(rand_err_ch4_flux))%>%
-    dplyr::rename(meas_err = rand_err_ch4_flux) %>%
-    dplyr::select(c(datetime,meas_err))
+    dplyr::rename(meas_err = rand_err_ch4_flux) #%>%
+    #dplyr::select(c(datetime,"meas_err"))
 
   #gapfilling errors and measurement uncertainties together
   #30 min
@@ -139,9 +151,9 @@ ch4_flux_aggregator <- function(flux_df,
 
 
   #growing season
-  rd_err_df$year <- lubridate::year(rd_err_df[,"datetime"])
-  rd_err_df$month <- lubridate::month(rd_err_df[,"datetime"])
-  rd_err_df$date <- as.Date(rd_err_df$datetime)
+  # rd_err_df$year <- lubridate::year(rd_err_df[[datetime]])
+  # rd_err_df$month <- lubridate::month(rd_err_df[[datetime]])
+  # rd_err_df$date <- as.Date(rd_err_df[[datetime]])
   rd_err_df$growing_season <- NA
 
   if(growing_season_definition == "fixed_months"){
@@ -169,9 +181,9 @@ ch4_flux_aggregator <- function(flux_df,
   #rd_err_df$growing_season <- as.factor(rd_err_df$growing_season)
 
 
-  df_mc$year <- lubridate::year(df_mc$datetime)
-  df_mc$month <- lubridate::month(df_mc$datetime)
-  df_mc$date <- as.Date(df_mc$datetime)
+  # df_mc$year <- lubridate::year(df_mc[[datetime]])
+  # df_mc$month <- lubridate::month(df_mc[[datetime]])
+  # df_mc$date <- as.Date(df_mc[,datetime])
   df_mc$growing_season <- NA
 
   if (growing_season_definition == "fixed_months"){
@@ -236,8 +248,8 @@ ch4_flux_aggregator <- function(flux_df,
     dplyr::mutate(ch4_flux_final_filled=PostEddyPro::umolCH4m2s_to_mgCH4m2_30min(ch4_flux_final_filled))
 
   flux_df_30min <- flux_df %>%
-    dplyr::select(c("datetime","ch4_flux_final_filled","quality"))%>%
-    merge(df_30min, by="datetime", all=TRUE)%>%
+    dplyr::select(c(datetime,"ch4_flux_final_filled","quality"))%>%
+    merge(df_30min, by=datetime, all = TRUE)%>%
     dplyr::rename(gapf_err=FCH4_sd) %>%
     dplyr::mutate(tot_err = ifelse(quality=="original",
                             meas_err,
@@ -245,7 +257,7 @@ ch4_flux_aggregator <- function(flux_df,
                                    sqrt(meas_err^2+gapf_err^2),
                                    NA)
     )) %>%
-    dplyr::select(c(datetime, ch4_flux_final_filled,quality,meas_err,gapf_err,tot_err)) %>%
+    dplyr::select(c(datetime, "ch4_flux_final_filled","quality","meas_err","gapf_err","tot_err")) %>%
     dplyr::rename(FCH4=ch4_flux_final_filled)
 
 
@@ -297,9 +309,9 @@ ch4_flux_aggregator <- function(flux_df,
 
   #Growing season
   if(growing_season_definition =="fixed_months"){
-    flux_df$year <- lubridate::year(flux_df[,"datetime"])
-    flux_df$month <- lubridate::month(flux_df[,"datetime"])
-    flux_df$date <- as.Date(flux_df$datetime)
+    flux_df$year <- lubridate::year(flux_df[,datetime])
+    flux_df$month <- lubridate::month(flux_df[,datetime])
+    flux_df$date <- as.Date(datetime)
     flux_df$growing_season <- NA
     for(yr in unique(flux_df$year)){
       flux_df$growing_season[which(flux_df$month %in% c(month_start_growing_season:month_end_growing_season) & flux_df$year==yr)] <- paste("Growing season", yr, sep= " ")
@@ -309,9 +321,9 @@ ch4_flux_aggregator <- function(flux_df,
     }
   }
   if(growing_season_definition %in% c("meteorological", "soil_temp", "soil_temp_mean")){
-    flux_df$year <- lubridate::year(flux_df[,"datetime"])
-    flux_df$month <- lubridate::month(flux_df[,"datetime"])
-    flux_df$date <- as.Date(flux_df$datetime)
+    flux_df$year <- lubridate::year(flux_df[,datetime])
+    flux_df$month <- lubridate::month(flux_df[,datetime])
+    flux_df$date <- as.Date(flux_df[[datetime]])
     flux_df$growing_season <- NA
     for(yr in unique(flux_df$year)){
       gs_start <- gs_info[gs_info$year == yr, "start"]
