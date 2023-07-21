@@ -247,9 +247,9 @@ ch4_flux_aggregator <- function(flux_df,
   flux_df <- flux_df %>%
     dplyr::mutate(ch4_flux_final_filled=PostEddyPro::umolCH4m2s_to_mgCH4m2_30min(ch4_flux_final_filled))
 
-  flux_df_30min <- flux_df %>%
-    dplyr::select(c(datetime,"ch4_flux_final_filled","quality"))%>%
-    merge(df_30min, by=datetime, all = TRUE)%>%
+  flux_df_30min <- data.table::setDT(flux_df) %>%
+    dplyr::select(datetime,ch4_flux_final_filled,quality)%>%
+    data.table::merge.data.table(data.table::setDT(df_30min %>% select(-ch4_flux_final_filled)), by="datetime", all = TRUE)%>%
     dplyr::rename(gapf_err=FCH4_sd) %>%
     dplyr::mutate(tot_err = ifelse(quality=="original",
                             meas_err,
@@ -260,7 +260,7 @@ ch4_flux_aggregator <- function(flux_df,
     dplyr::select(c(datetime, "ch4_flux_final_filled","quality","meas_err","gapf_err","tot_err")) %>%
     dplyr::rename(FCH4=ch4_flux_final_filled)
 
-
+flux_df_30min <- as.data.frame(flux_df_30min)
   #hourly
 
   flux_df_hour <- flux_df %>%
@@ -306,7 +306,7 @@ ch4_flux_aggregator <- function(flux_df,
     dplyr::arrange(year,month)
 
 
-
+  flux_df <- as.data.frame(flux_df)
   #Growing season
   if(growing_season_definition =="fixed_months"){
     flux_df$year <- lubridate::year(flux_df[,datetime])
@@ -323,7 +323,7 @@ ch4_flux_aggregator <- function(flux_df,
   if(growing_season_definition %in% c("meteorological", "soil_temp", "soil_temp_mean")){
     flux_df$year <- lubridate::year(flux_df[,datetime])
     flux_df$month <- lubridate::month(flux_df[,datetime])
-    flux_df$date <- as.Date(flux_df[[datetime]])
+    flux_df$date <- as.Date(flux_df[,datetime])
     flux_df$growing_season <- NA
     for(yr in unique(flux_df$year)){
       gs_start <- gs_info[gs_info$year == yr, "start"]
