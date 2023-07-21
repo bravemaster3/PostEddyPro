@@ -6,6 +6,7 @@
 \usage{
 montecarlo_sim(
   df_gf,
+  df_cv,
   flux_col = "ch4_flux_final",
   flux_pred_col = "predicted",
   datetime = "datetime",
@@ -18,6 +19,8 @@ montecarlo_sim(
 \arguments{
 \item{df_gf}{gapfilled flux dataframe. This would be retrieved for instance from the rf_gapfiller function}
 
+\item{df_cv}{crossvalidation dataframe contaning predicted vs. observed.}
+
 \item{flux_col}{column name of the non-gapilled fluxes}
 
 \item{flux_pred_col}{column name of the predicted fluxes (predictions of the non-gap values)}
@@ -29,6 +32,8 @@ montecarlo_sim(
 \item{n}{number of montecarlo simulations to run}
 
 \item{saving_folder}{folder where the simulations will be saved}
+
+\item{flux_sign}{}
 }
 \value{
 a dataframe containing weekly sigma of residuals and corresponding mean fluxes used for finding the relationship between residuals sigma and flux mean.
