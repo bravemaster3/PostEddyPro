@@ -18,28 +18,36 @@ montecarlo_sim_gf <- function(mc_sim_path,
   formula <- paste(flux_col, "~" , paste(preds, collapse = " + ")) #this will create the string formula used in the random forest
   all_sim <- list.files(path=mc_sim_path, full.names = TRUE)
 
-  lapply(all_sim, function(x){
-    print(x)
-    df <- data.table::fread(x)
+  no_cores <- parallel::detectCores() - 1
+  cl <- parallel::makePSOCKcluster(no_cores)
+  doParallel::registerDoParallel(cl)
+  `%dopar%` <- foreach::`%dopar%`
 
-    df_no_na <- stats::na.omit(df)
+  useless_output = foreach::foreach(x = all_sim, .packages = c("randomForest",
+       "stats", "dplyr", "data.table")) %dopar% {
 
-    rf_final <- randomForest::randomForest(
-      stats::as.formula(formula), #this is the same formula as before
-      data=df_no_na,             #Here we use the full set
-      mtry=mtry, #this is the best tuning during the caret crossvalidation
-      type="regression"
-    )
+         df <- data.table::fread(x)
 
-    df$predicted <- stats::predict(rf_final, newdata = df)#this predicts for missing and non-missing values alike,
+         df_no_na <- stats::na.omit(df)
 
-    df <- df %>% dplyr::mutate(ch4_flux_final_filled = ifelse(!is.na(ch4_flux_final),ch4_flux_final,predicted),
-                        quality = ifelse(!is.na(ch4_flux_final),"original","gapfilled"))
+         rf_final <- randomForest::randomForest(
+           stats::as.formula(formula), #this is the same formula as before
+           data=df_no_na,             #Here we use the full set
+           mtry=mtry, #this is the best tuning during the caret crossvalidation
+           type="regression"
+         )
 
-    #preparing saving path
+         df$predicted <- stats::predict(rf_final, newdata = df)#this predicts for missing and non-missing values alike,
 
-    input_basename <- gsub("\\.","_gf.", basename(x))
-    saving_filename <- file.path(mc_sim_gf_path, input_basename)
-    data.table::fwrite(df, saving_filename, dateTimeAs = "write.csv")
-  })
+         df <- df %>% dplyr::mutate(ch4_flux_final_filled = ifelse(!is.na(ch4_flux_final),ch4_flux_final,predicted),
+                                    quality = ifelse(!is.na(ch4_flux_final),"original","gapfilled"))
+
+         #preparing saving path
+
+         input_basename <- gsub("\\.","_gf.", basename(x))
+         saving_filename <- file.path(mc_sim_gf_path, input_basename)
+         data.table::fwrite(df, saving_filename, dateTimeAs = "write.csv")
+       }
+  parallel::stopCluster(cl)
+  foreach::registerDoSEQ()
 }
