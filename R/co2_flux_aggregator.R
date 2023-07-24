@@ -31,7 +31,7 @@ co2_flux_aggregator <- function(path_to_df_f,
                                 Ts_mean_thresh = 2
                                 ){
 
-
+  aggr_list <- list()
   #First, lets identify the growing season periods if the growing_season_definition is "meteorological"
 
   if(growing_season_definition == "meteorological" & !is.null(df_Ta)){
