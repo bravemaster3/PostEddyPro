@@ -9,7 +9,10 @@ xgboost_gapfiller(
   datetime = "datetime",
   flux_col = "co2_flux",
   preds,
-  sitename
+  sitename,
+  tuning_grid = list(nrounds = c(500, 1000, 1500), max_depth = c(5, 10, 15), eta =
+    c(0.05, 0.3), gamma = c(0, 0.5), colsample_bytree = c(0.65, 0.75), min_child_weight =
+    c(2, 5), subsample = c(0.5, 0.75))
 )
 }
 \arguments{
@@ -22,6 +25,9 @@ xgboost_gapfiller(
 \item{preds}{vector of predictors that have been gapfilled in advance}
 
 \item{sitename}{sitename just for labelling the plots}
+
+\item{tuning_grid}{named list of hyperparameters to tune, nrounds, max_depth,
+eta, gamma, colsample_bytree, min_child_weight, subsample. Read more about it here https://www.hackerearth.com/practice/machine-learning/machine-learning-algorithms/beginners-tutorial-on-xgboost-parameter-tuning-r/tutorial/}
 }
 \value{
 large list of elements. tuningmodel: finalmodel (the model used for gapfilling), site_df (the final data.frame containing both the input dataframe and the gapfilled column), r_sq_cv (crossvalidated R-squared)

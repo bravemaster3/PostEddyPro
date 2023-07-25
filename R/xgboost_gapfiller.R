@@ -4,7 +4,10 @@
 #' @param datetime name of the timestamp (datetime) column already in POSIXct format
 #' @param flux_col flux column to be gapfilled, this function was developped for methane fluxes, but can be used for other fluxes as long as a good set of predictors are provided
 #' @param preds vector of predictors that have been gapfilled in advance
+#' @param tuning_grid named list of hyperparameters to tune, nrounds, max_depth,
+#' eta, gamma, colsample_bytree, min_child_weight, subsample. Read more about it here https://www.hackerearth.com/practice/machine-learning/machine-learning-algorithms/beginners-tutorial-on-xgboost-parameter-tuning-r/tutorial/
 #' @param sitename sitename just for labelling the plots
+#'
 #' @importFrom stats as.formula
 #'
 #' @return large list of elements. tuningmodel: finalmodel (the model used for gapfilling), site_df (the final data.frame containing both the input dataframe and the gapfilled column), r_sq_cv (crossvalidated R-squared)
@@ -14,7 +17,16 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
                          datetime="datetime", #the name of the date & time column! Though I use the same for all sites, setting it as an argument will allow to use the function easily with datasets with different names!
                          flux_col="co2_flux", #The name of the flux column to gapfill
                          preds, #a vector of predictor variables, with default the previous vector created
-                         sitename #This variable is simply for annotating the plots with the site name.
+                         sitename, #This variable is simply for annotating the plots with the site name.
+                         tuning_grid = list(
+                           nrounds = c(500,1000, 1500),#c(500,1000,1500), #number of trees
+                           max_depth = c(5, 10, 15),# max depth of a tree
+                           eta = c(0.05,0.3),#c(0.025,0.05,0.1,0.3), #Learning rate
+                           gamma = c(0, 0.5),#c(0, 0.1, 0.5, 1.0)#pruning --> Should be tuned. i.e c(0, 0.05, 0.1, 0.5, 0.7, 0.9, 1.0)
+                           colsample_bytree = c(0.65, 0.75),#c(0.4, 0.6, 0.8, 1.0)#subsample ratio of columns for tree
+                           min_child_weight = c(2,5),#the larger, the more conservative the model is; can be used as a stop
+                           subsample = c(0.5, 0.75)#c(0.5, 0.75, 1.0)#used to prevent overfitting by sampling X% training
+                         )
 ){
 
   message(paste0("!!!!XGBoost gapfilling started at: ", Sys.time()))
@@ -46,25 +58,7 @@ xgboost_gapfiller <- function(site_df, #The dataframe containing all the flux da
 
   formula <- paste(flux_col, "~" , paste(preds, collapse = " + ")) #this will create the string formula used in the random forest
 
-  # grid_tune <- expand.grid(
-  #   nrounds = c(500,1000, 1500),#c(500,1000,1500), #number of trees
-  #   max_depth = c(3, 5, 10, 15),#c(2,4,6),
-  #   eta = c(0.05,0.3),#c(0.025,0.05,0.1,0.3), #Learning rate
-  #   gamma = c(0, 0.5),#c(0, 0.1, 0.5, 1.0), # pruning --> Should be tuned. i.e c(0, 0.05, 0.1, 0.5, 0.7, 0.9, 1.0)
-  #   colsample_bytree = c(0.65, 0.75, 1),#c(0.4, 0.6, 0.8, 1.0), #subsample ratio of columns for tree
-  #   min_child_weight = c(1,2,5),#c(1,2,3), # the larger, the more conservative the model is; can be used as a stop
-  #   subsample = c(0.4, 0.6, 0.8, 1)#c(0.5, 0.75, 1.0) # used to prevent overfitting by sampling X% training
-  # )
-
-  grid_tune <- expand.grid(
-    nrounds = c(500,1000, 1500),#c(500,1000,1500), #number of trees
-    max_depth = c(5, 10, 15),#c(2,4,6),
-    eta = c(0.05,0.3),#c(0.025,0.05,0.1,0.3), #Learning rate
-    gamma = c(0, 0.5),#c(0, 0.1, 0.5, 1.0), # pruning --> Should be tuned. i.e c(0, 0.05, 0.1, 0.5, 0.7, 0.9, 1.0)
-    colsample_bytree = c(0.65, 0.75),#c(0.4, 0.6, 0.8, 1.0), #subsample ratio of columns for tree
-    min_child_weight = c(2,5),#c(1,2,3), # the larger, the more conservative the model is; can be used as a stop
-    subsample = c(0.5, 0.75)#c(0.5, 0.75, 1.0) # used to prevent overfitting by sampling X% training
-  )
+  grid_tune <- expand.grid(tuning_grid)
 
   message(paste0("........Starting Hyperparameter tuning with a grid and 10 fold cv: ", Sys.time()))
   m <- caret::train(stats::as.formula(formula),
