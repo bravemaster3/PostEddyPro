@@ -64,7 +64,7 @@ ch4_flux_aggregator <- function(flux_df,
 
 
   #initializing or "nulifying" global variables
-  rand_err_ch4_flux <- datetime <- meas_err <- ch4_flux_final_filled <- FCH4_f <- iteration <- FCH4_sum <- year <- month <- FCH4_sd <- quality <- gapf_err <- tot_err <- FCH4 <- NULL
+  rand_err_ch4_flux <- meas_err <- ch4_flux_final_filled <- FCH4_f <- iteration <- FCH4_sum <- year <- month <- FCH4_sd <- quality <- gapf_err <- tot_err <- FCH4 <- NULL
   aggr_list <- list()
   #converting the errors to mg...
   rd_err_df <- rd_err_df %>%
