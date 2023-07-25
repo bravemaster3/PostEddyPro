@@ -48,9 +48,10 @@ formatting_fluxes_REddyProc <- function(df,
   df_ReddyProc[is.na(df_ReddyProc)] <- -9999
 
   headers <- colnames(df_ReddyProc)
-  if(grepl("co2",tolower(flux_col), fixed=TRUE)) unit_flux <- "umolm-2s-1"
-  if(grepl("h2o",tolower(flux_col), fixed=TRUE)) unit_flux <- "mmolm-2s-1"
-
+  # if(grepl("co2",tolower(flux_col), fixed=TRUE)) unit_flux <- "umolm-2s-1"
+  # if(grepl("h2o",tolower(flux_col), fixed=TRUE)) unit_flux <- "mmolm-2s-1"
+  if(FLUX == "NEE") unit_flux <- "umolm-2s-1"
+  if(FLUX == "H2O") unit_flux <- "mmolm-2s-1"
 
   units <- c("-", "-", "-",	unit_flux,	"Wm-2",	"Wm-2",	"Wm-2",	"degC",	"degC",	"%", "hPa",	"ms-1")
 
