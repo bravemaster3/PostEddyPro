@@ -14,6 +14,7 @@
 #' @param Ts_ampl_thresh threshold of daily soil temperature amplitude when using that option for defining the growing season. default is 0.1°C
 #' @param Ts_mean_thresh threshold of daily mean soil temperature when using that option for defining the growing season. default is 2°C
 #' @param datetime datetime column in both of your data.frames
+#' @param df_ori dataframe containing original NEE with gaps alongside the same datetime column.this is needed when using XGBoost gapfiller instead of Reddyproc because the NEE column no longer has gaps. Only columns needed, datetime, NEE
 #'
 #' @return a list of half-hourly, hourly, daily, weekly, monthly, growing season and yearly aggregated flux dataframes
 #' @export
@@ -28,7 +29,8 @@ co2_flux_aggregator <- function(path_to_df_f,
                                 datetime = "datetime",
                                 number_consec_days=7,
                                 Ts_ampl_thresh = 0.1,
-                                Ts_mean_thresh = 2
+                                Ts_mean_thresh = 2,
+                                df_ori = NULL
                                 ){
 
   aggr_list <- list()
@@ -318,25 +320,50 @@ co2_flux_aggregator <- function(path_to_df_f,
   #
   # fwrite(flux_df_f_30min, "C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/flux_df_f/Eddypro_output/flux_df_f_ReddyProc_GF_30min.csv", dateTimeAs = "write.csv")
 
+  if (!is.null(df_ori))
+  {
+    df_ori <- df_ori %>%
+      dplyr::mutate(quality = ifelse(!is.na(NEE),"original","gapfilled")) %>%
+      select(c(datetime,"quality"))
 
 
-  flux_df_f_30min <- flux_df_f %>%
-    dplyr::select(c(datetime,"NEE","NEE_f","GPP_f","Reco"))%>%
-    merge(df_30min, by=datetime, all=TRUE)%>%
-    dplyr::rename(gapf_err=NEE_sd) %>%
-    dplyr::mutate(quality = ifelse(!is.na(NEE),
-                            "original",
-                            ifelse(!is.na(NEE_f),
-                                   "gapfilled",
-                                   NA)
-    )) %>%
-    dplyr::mutate(tot_err = ifelse(quality=="original",
-                            meas_err,
-                            ifelse(quality=="gapfilled",
-                                   sqrt(meas_err^2+gapf_err^2),
-                                   NA)
-    )) %>%
-    dplyr::select(c(datetime, "NEE", "NEE_f","quality","meas_err","gapf_err","tot_err","GPP_f","GPP_sd","Reco","Reco_sd"))
+    flux_df_f_30min <- flux_df_f %>%
+      merge(df_ori, by=datetime, all=TRUE) %>%
+      dplyr::mutate(NEE = ifelse(quality == "original", NEE, NA)) %>%
+      dplyr::select(c(datetime,"NEE","NEE_f","GPP_f","Reco", "quality"))%>%
+      merge(df_30min, by=datetime, all=TRUE)%>%
+      dplyr::rename(gapf_err=NEE_sd) %>%
+      dplyr::mutate(tot_err = ifelse(quality=="original",
+                                     meas_err,
+                                     ifelse(quality=="gapfilled",
+                                            sqrt(meas_err^2+gapf_err^2),
+                                            NA)
+      )) %>%
+      dplyr::select(c(datetime, "NEE", "NEE_f","quality","meas_err","gapf_err","tot_err","GPP_f","GPP_sd","Reco","Reco_sd"))
+
+
+
+
+  } else
+  {
+    flux_df_f_30min <- flux_df_f %>%
+      dplyr::select(c(datetime,"NEE","NEE_f","GPP_f","Reco"))%>%
+      merge(df_30min, by=datetime, all=TRUE)%>%
+      dplyr::rename(gapf_err=NEE_sd) %>%
+      dplyr::mutate(quality = ifelse(!is.na(NEE),
+                                     "original",
+                                     ifelse(!is.na(NEE_f),
+                                            "gapfilled",
+                                            NA)
+      )) %>%
+      dplyr::mutate(tot_err = ifelse(quality=="original",
+                                     meas_err,
+                                     ifelse(quality=="gapfilled",
+                                            sqrt(meas_err^2+gapf_err^2),
+                                            NA)
+      )) %>%
+      dplyr::select(c(datetime, "NEE", "NEE_f","quality","meas_err","gapf_err","tot_err","GPP_f","GPP_sd","Reco","Reco_sd"))
+      }
 
   #fwrite(flux_df_f_30min, "C:/BRAVE/slu/eddy_covariance/myphd/Data_organized/flux_df_f/Eddypro_output/flux_df_f_ReddyProc_GF_CO2_30min_NEW.csv", dateTimeAs = "write.csv")
 

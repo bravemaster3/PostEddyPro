@@ -16,7 +16,8 @@ co2_flux_aggregator(
   datetime = "datetime",
   number_consec_days = 7,
   Ts_ampl_thresh = 0.1,
-  Ts_mean_thresh = 2
+  Ts_mean_thresh = 2,
+  df_ori = NULL
 )
 }
 \arguments{
@@ -44,6 +45,8 @@ co2_flux_aggregator(
 \item{Ts_ampl_thresh}{threshold of daily soil temperature amplitude when using that option for defining the growing season. default is 0.1°C}
 
 \item{Ts_mean_thresh}{threshold of daily mean soil temperature when using that option for defining the growing season. default is 2°C}
+
+\item{df_ori}{dataframe containing original NEE with gaps alongside the same datetime column.this is needed when using XGBoost gapfiller instead of Reddyproc because the NEE column no longer has gaps. Only columns needed, datetime, NEE}
 }
 \value{
 a list of half-hourly, hourly, daily, weekly, monthly, growing season and yearly aggregated flux dataframes
