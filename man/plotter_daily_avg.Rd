@@ -18,7 +18,8 @@ plotter_daily_avg(
   scale_x = "month_only",
   rotate_x_label = FALSE,
   conf_int = TRUE,
-  window_size = 14
+  window_size = 14,
+  sd_col = NULL
 )
 }
 \arguments{
@@ -49,6 +50,8 @@ plotter_daily_avg(
 \item{conf_int}{Logical. Display a ribbon confidence interval around the smoothed lines. default, TRUE.}
 
 \item{window_size}{window size for centered rolling average, default is 14 days}
+
+\item{sd_col}{column to use for error when conf_int is TRUE and we want to plot a ribbon. If not provided and column is NULL, a rolling sd will be computed with the same window_size as for the moving average line...}
 }
 \value{
 a ggplot object

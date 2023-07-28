@@ -14,20 +14,30 @@
 #' @param rotate_x_label Logical. default, FALSE
 #' @param conf_int Logical. Display a ribbon confidence interval around the smoothed lines. default, TRUE.
 #' @param window_size window size for centered rolling average, default is 14 days
+#' @param sd_col column to use for error when conf_int is TRUE and we want to plot a ribbon. If not provided and column is NULL, a rolling sd will be computed with the same window_size as for the moving average line...
 #'
 #' @return a ggplot object
 #' @export
 
 plotter_daily_avg <- function (list_df, y_label, y_col = "FCH4_sum", show_x_label = FALSE,
-                               ignore_NA = TRUE, GPP = FALSE, Reco = FALSE, NEE = FALSE,
-                               yintercept_line = FALSE, yintercept_value = 0, scale_x = "month_only",
-                               rotate_x_label = FALSE, conf_int = TRUE, window_size = 14)
+                                ignore_NA = TRUE, GPP = FALSE, Reco = FALSE, NEE = FALSE,
+                                yintercept_line = FALSE, yintercept_value = 0, scale_x = "month_only",
+                                rotate_x_label = FALSE, conf_int = TRUE, window_size = 14, sd_col = NULL)
 {
 
-  for(i in 1:length(list_df))
-  {
+  for(i in 1:length(list_df)){
     list_df[[i]] <- list_df[[i]] %>%
       dplyr::mutate(Var_smooth = zoo::rollmean(.data[[y_col]], k = window_size, fill=NA, align = "center"))
+
+    if(!is.null(sd_col)){
+      list_df[[i]] <- list_df[[i]] %>%
+        dplyr::mutate(Var_sd = zoo::rollmean(.data[[sd_col]], k = window_size, fill=NA, align = "center"))
+    } else{
+      list_df[[i]] <- list_df[[i]] %>%
+        dplyr::mutate(Var_sd = zoo::rollapplyr(.data[[y_col]], width = window_size, FUN = sd, fill=NA, align = "center"))
+
+    }
+
   }
   df <- Reduce(function(...) rbind(...), list_df)
   g <- ggplot2::ggplot(data = df, ggplot2::aes_string(x = "date",
@@ -36,7 +46,7 @@ plotter_daily_avg <- function (list_df, y_label, y_col = "FCH4_sum", show_x_labe
     g <- g + ggplot2::geom_hline(yintercept = yintercept_value,
                                  color = "black", linewidth = 0.5, linetype = "dashed")
   }
-  g <- g + ggplot2::geom_point(alpha = 0.1)
+  g <- g + ggplot2::geom_point(alpha = 0.2)
   df2 <- df
   if (GPP == TRUE) {
     df2 <- df2 %>% dplyr::group_by(Site) %>% dplyr::mutate(GPP_sum = ifelse(is.na(GPP_sum) &
@@ -70,8 +80,13 @@ plotter_daily_avg <- function (list_df, y_label, y_col = "FCH4_sum", show_x_labe
                                                         size = 1)) + ggplot2::theme(legend.position = c(0.85,
                                                                                                         0.8), legend.background = ggplot2::element_rect(fill = "white",
                                                                                                                                                         colour = "black", size = 0.5, linetype = 2), legend.text = ggplot2::element_text(size = 8),
-                                                                                    legend.title = ggplot2::element_blank(), legend.spacing.y = ggplot2::unit(0.01,
-                                                                                                                                                              "cm"))
+                                                                                    legend.title = ggplot2::element_blank(), legend.spacing.y = ggplot2::unit(0.01, "cm"))
+
+  if(isTRUE(conf_int == TRUE)){
+    g <- g+geom_ribbon(mapping = aes(ymin = Var_smooth - Var_sd, ymax = Var_smooth + Var_sd),
+                       alpha = 0.1, linetype = 0)
+  }
+
   if (scale_x == "month_year") {
     g <- g + ggplot2::scale_x_date(breaks = "1 month", labels = scales::date_format("%b/%Y"))
   }
