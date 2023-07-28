@@ -59,11 +59,11 @@ plotter_daily_avg <- function (list_df, y_label, y_col = "FCH4_sum", show_x_labe
     for (i in unique(df2$bloc)) {
       if (unique(df2[df2$bloc == i, "na_y"]) == 1) {
         g <- g + ggplot2::geom_line(data = df2[df2$bloc ==
-                                                 i, ], aes(y = Var_smooth), alpha = 0.6, linewidth = 1.5)
+                                                 i, ], aes(y = Var_smooth), alpha = 0.8, linewidth = 1.5)
       }
     }
   } else {
-    g <- g + ggplot2::geom_line(data = df2, aes(y = Var_smooth), alpha = 0.6, linewidth = 1.5)
+    g <- g + ggplot2::geom_line(data = df2, aes(y = Var_smooth), alpha = 0.8, linewidth = 1.5)
   }
   g <- g + ggplot2::ylab(y_label) + ggplot2::theme_classic() +
     ggplot2::theme(panel.border = ggplot2::element_rect(fill = NA,
