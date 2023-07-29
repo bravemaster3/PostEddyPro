@@ -17,9 +17,11 @@ plotter_daily_avg(
   yintercept_value = 0,
   scale_x = "month_only",
   rotate_x_label = FALSE,
-  conf_int = TRUE,
+  conf_int = FALSE,
   window_size = 14,
-  sd_col = NULL
+  sd_col = NULL,
+  y_col_ori = NULL,
+  different_y_line_point = FALSE
 )
 }
 \arguments{
@@ -47,11 +49,16 @@ plotter_daily_avg(
 
 \item{rotate_x_label}{Logical. default, FALSE}
 
-\item{conf_int}{Logical. Display a ribbon confidence interval around the smoothed lines. default, TRUE.}
+\item{conf_int}{Logical. Display a ribbon confidence interval around the smoothed lines. default, FALSE.}
 
 \item{window_size}{window size for centered rolling average, default is 14 days}
 
 \item{sd_col}{column to use for error when conf_int is TRUE and we want to plot a ribbon. If not provided and column is NULL, a rolling sd will be computed with the same window_size as for the moving average line...}
+
+\item{y_col_ori}{second Y column to use for points. useful for instance when y has been na.approximated to gapfill missing data and you still want to plot points with the original, and rollmeans with the interpolated
+Remember to set different_y_line_point to TRUE for it to work.}
+
+\item{different_y_line_point}{logical, default FALSE. set to TRUE along side y_col_ori to use y_col_ori to plot points}
 }
 \value{
 a ggplot object

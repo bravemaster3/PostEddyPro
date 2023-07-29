@@ -15,6 +15,9 @@
 #' @param conf_int Logical. Display a ribbon confidence interval around the smoothed lines. default, FALSE.
 #' @param window_size window size for centered rolling average, default is 14 days
 #' @param sd_col column to use for error when conf_int is TRUE and we want to plot a ribbon. If not provided and column is NULL, a rolling sd will be computed with the same window_size as for the moving average line...
+#' @param y_col_ori second Y column to use for points. useful for instance when y has been na.approximated to gapfill missing data and you still want to plot points with the original, and rollmeans with the interpolated
+#' Remember to set different_y_line_point to TRUE for it to work.
+#' @param different_y_line_point logical, default FALSE. set to TRUE along side y_col_ori to use y_col_ori to plot points
 #'
 #' @return a ggplot object
 #' @export
@@ -22,7 +25,7 @@
 plotter_daily_avg <- function (list_df, y_label, y_col = "FCH4_sum", show_x_label = FALSE,
                                 ignore_NA = TRUE, GPP = FALSE, Reco = FALSE, NEE = FALSE,
                                 yintercept_line = FALSE, yintercept_value = 0, scale_x = "month_only",
-                                rotate_x_label = FALSE, conf_int = FALSE, window_size = 14, sd_col = NULL)
+                                rotate_x_label = FALSE, conf_int = FALSE, window_size = 14, sd_col = NULL, y_col_ori = NULL, different_y_line_point = FALSE)
 {
 
   for(i in 1:length(list_df)){
@@ -40,8 +43,13 @@ plotter_daily_avg <- function (list_df, y_label, y_col = "FCH4_sum", show_x_labe
 
   }
   df <- Reduce(function(...) rbind(...), list_df)
-  g <- ggplot2::ggplot(data = df, ggplot2::aes_string(x = "date",
-                                                      y = y_col, color = "Site"))
+  if(!is.null(y_col_ori) & isTRUE(different_y_line_point)){
+    g <- ggplot2::ggplot(data = df, ggplot2::aes_string(x = "date",
+                                                        y = y_col_ori, color = "Site"))
+  } else(
+    g <- ggplot2::ggplot(data = df, ggplot2::aes_string(x = "date",
+                                                        y = y_col, color = "Site"))
+  )
   if (isTRUE(yintercept_line)) {
     g <- g + ggplot2::geom_hline(yintercept = yintercept_value,
                                  color = "black", linewidth = 0.5, linetype = "dashed")
