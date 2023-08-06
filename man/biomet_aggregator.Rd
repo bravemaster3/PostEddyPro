@@ -16,7 +16,9 @@ biomet_aggregator(
   growing_season_definition = "fixed_months",
   df_Ta = NULL,
   df_Ts = NULL,
-  number_consec_days = 7
+  number_consec_days = 7,
+  Ts_ampl_thresh = 0.1,
+  Ts_mean_thresh = 2
 )
 }
 \arguments{
@@ -44,6 +46,10 @@ biomet_aggregator(
 \item{df_Ts}{a dataframe containing 2 columns: a PosiXct column with timestamps in the format "\%Y-\%m-\%d \%H:\%M:\%S" and a column representing soil temperatures <e.g. Ts 15 cm>}
 
 \item{number_consec_days}{Minimum number of days used to define the growing season, for which air temperature, soil temperature or soil temperature amplitude remains above a set threshold}
+
+\item{Ts_ampl_thresh}{threshold of daily soil temperature amplitude when using that option for defining the growing season. default is 0.1°C}
+
+\item{Ts_mean_thresh}{threshold of daily mean soil temperature when using that option for defining the growing season. default is 2°C}
 }
 \value{
 a summarized dataframe, containing the aggregation timescale variables and the aggregated values
