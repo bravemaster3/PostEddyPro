@@ -13,7 +13,7 @@
 #' @param scale_x One of "month_only or "month_year", default is month_only
 #' @param rotate_x_label Logical. default, FALSE
 #' @param conf_int Logical. Display a ribbon confidence interval around the smoothed lines. default, FALSE.
-#' @param window_size window size for centered rolling average, default is 14 days
+#' @param window_size window size for centered rolling average, default is 15 days
 #' @param sd_col column to use for error when conf_int is TRUE and we want to plot a ribbon. If not provided and column is NULL, a rolling sd will be computed with the same window_size as for the moving average line...
 #' @param y_col_ori second Y column to use for points. useful for instance when y has been na.approximated to gapfill missing data and you still want to plot points with the original, and rollmeans with the interpolated
 #' Remember to set different_y_line_point to TRUE for it to work.
@@ -25,7 +25,7 @@
 plotter_daily_avg <- function (list_df, y_label, y_col = "FCH4_sum", show_x_label = FALSE,
                                 ignore_NA = TRUE, GPP = FALSE, Reco = FALSE, NEE = FALSE,
                                 yintercept_line = FALSE, yintercept_value = 0, scale_x = "month_only",
-                                rotate_x_label = FALSE, conf_int = FALSE, window_size = 14, sd_col = NULL, y_col_ori = NULL, different_y_line_point = FALSE)
+                                rotate_x_label = FALSE, conf_int = FALSE, window_size = 15, sd_col = NULL, y_col_ori = NULL, different_y_line_point = FALSE)
 {
 
   for(i in 1:length(list_df)){
