@@ -18,6 +18,7 @@
 #' @param y_col_ori second Y column to use for points. useful for instance when y has been na.approximated to gapfill missing data and you still want to plot points with the original, and rollmeans with the interpolated
 #' Remember to set different_y_line_point to TRUE for it to work.
 #' @param different_y_line_point logical, default FALSE. set to TRUE along side y_col_ori to use y_col_ori to plot points
+#' @param levels levels for ordering the Sites
 #'
 #' @return a ggplot object
 #' @export
@@ -25,7 +26,9 @@
 plotter_daily_avg <- function (list_df, y_label, y_col = "FCH4_sum", show_x_label = FALSE,
                                 ignore_NA = TRUE, GPP = FALSE, Reco = FALSE, NEE = FALSE,
                                 yintercept_line = FALSE, yintercept_value = 0, scale_x = "month_only",
-                                rotate_x_label = FALSE, conf_int = FALSE, window_size = 15, sd_col = NULL, y_col_ori = NULL, different_y_line_point = FALSE)
+                                rotate_x_label = FALSE, conf_int = FALSE, window_size = 15, sd_col = NULL,
+                               y_col_ori = NULL, different_y_line_point = FALSE,
+                               Site_levels = NULL)
 {
 
   for(i in 1:length(list_df)){
@@ -43,6 +46,9 @@ plotter_daily_avg <- function (list_df, y_label, y_col = "FCH4_sum", show_x_labe
 
   }
   df <- Reduce(function(...) rbind(...), list_df)
+  if (!is.null(levels)){
+    df$Site = factor(df$Site, levels = Site_levels)
+  }
   if(!is.null(y_col_ori) & isTRUE(different_y_line_point)){
     g <- ggplot2::ggplot(data = df, ggplot2::aes_string(x = "date",
                                                         y = y_col_ori, color = "Site"))

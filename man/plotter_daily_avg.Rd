@@ -21,7 +21,8 @@ plotter_daily_avg(
   window_size = 15,
   sd_col = NULL,
   y_col_ori = NULL,
-  different_y_line_point = FALSE
+  different_y_line_point = FALSE,
+  Site_levels = NULL
 )
 }
 \arguments{
@@ -59,6 +60,8 @@ plotter_daily_avg(
 Remember to set different_y_line_point to TRUE for it to work.}
 
 \item{different_y_line_point}{logical, default FALSE. set to TRUE along side y_col_ori to use y_col_ori to plot points}
+
+\item{levels}{levels for ordering the Sites}
 }
 \value{
 a ggplot object
