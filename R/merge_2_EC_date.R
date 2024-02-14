@@ -1,7 +1,8 @@
-#' Merge 2 Eddypro outputs, and choose to save the output to disk, but always return the merged dataframe
+#' Merge 2 Eddypro outputs, and choose to save the output to disk, but always return the merged dataframe. In this "date" version, you state the datetime where to merge, to remove overlaps
 #'
 #' @param path_EC1 path to the first eddypro full output file
 #' @param path_EC2 path to the second eddypro full output file
+#' @param datetime_merge timestamp as string, format "%YYYY-%mm-%dd %HH:%MM:%SS" at which to remove rows after -for df1- and rows before -for df2- . Note that the specified timestamp itself will be included in df2 and excluded from df1
 #' @param date_format_EC1 date format of the date column in the first eddypro full output. If the eddypro output has not been altered, the date format is "\%Y-\%m-\%d", the default. If it has been opened in excel for instance, the date format is likely "\%d/\%m/\%Y"
 #' @param date_format_EC2 date format of the date column in the second eddypro full output. If the eddypro output has not been altered, the date format is "\%Y-\%m-\%d", the default. If it has been opened in excel for instance, the date format is likely "\%d/\%m/\%Y"
 #' @param check_write_df logical, TRUE if you want to save the output to disk, in which case you must also provide writing_path
@@ -9,8 +10,9 @@
 #'
 #' @return the merged dataframe
 #' @export
-merge_2_EC <- function(path_EC1,
+merge_2_EC_date <- function(path_EC1,
                        path_EC2,
+                       datetime_merge,
                        date_format_EC1 = "%Y-%m-%d",
                        date_format_EC2 = "%Y-%m-%d",
                        check_write_df=FALSE,
@@ -34,10 +36,21 @@ merge_2_EC <- function(path_EC1,
   fluxes_2[fluxes_2 == -9999] <- NA
   fluxes_2$datetime <- lubridate::round_date(fluxes_2$datetime, "30 minutes") #needed when somehow the minutes are not so precise on 30 min
 
+  #removing rows after and before the datetime_merge
+  datetime_merge <- str_posix(datetime_merge)
+
+  fluxes_1 <- fluxes_1 %>%
+    filter(datetime < datetime_merge)
+
+  fluxes_2 <- fluxes_2 %>%
+    filter(datetime >= datetime_merge)
+
+
   #Merging both EC files
 
   fluxes_df <- merge(fluxes_1, fluxes_2, all = TRUE)
   fluxes_df <- fluxes_df[order(fluxes_df$datetime), ]
+
   fluxes_df_copy <- fluxes_df
   if(isTRUE(check_write_df)){
     if(is.null(writing_path)) stop("please provide the path for saving the merged file")
