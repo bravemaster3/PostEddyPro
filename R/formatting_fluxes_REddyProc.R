@@ -32,8 +32,10 @@ formatting_fluxes_REddyProc <- function(df,
   df$DoY <- lubridate::yday(df[,datetime])
   df$Hour <- lubridate::hour(df[,datetime]) + lubridate::minute(df[,datetime])/60
 
-  if(grepl("co2",tolower(flux_col), fixed=TRUE)) df$NEE <- df[,flux_col]
-  if(grepl("h2o",tolower(flux_col), fixed=TRUE)) df$H2O <- df[,flux_col]
+  # if(grepl("co2",tolower(flux_col), fixed=TRUE)) df$NEE <- df[,flux_col]
+  # if(grepl("h2o",tolower(flux_col), fixed=TRUE)) df$H2O <- df[,flux_col]
+  if (FLUX=="NEE") df$NEE <- df[, flux_col]
+  if (FLUX=="H2O") df$H2O <- df[, flux_col]
 
   df$Rg <- df[,rg_col]
   df$Tair <- df[,tair_col]
