@@ -13,6 +13,7 @@
 #' @param ustar_col u* column name
 #' @param saving_path saving folder path where the formatted file will be saved
 #' @param filename WITHOUT extension. name to be appended to saving_path to create full path name. If NULL, a default name will be written
+#' @param use_tsoil_col Boolean variable, default is TRUE, set to FALSE TO IGNORE TSOIL
 #'
 #' @return No value returned, but a file saved to disk
 #' @export
@@ -27,7 +28,8 @@ formatting_fluxes_REddyProc <- function(df,
                                         vpd_col = "VPD_f",#VPD must be in kpa
                                         ustar_col = "u*",
                                         saving_path,
-                                        filename = NULL){
+                                        filename = NULL,
+                                        use_tsoil_col = TRUE){
   df$Year <- lubridate::year(df[,datetime])
   df$DoY <- lubridate::yday(df[,datetime])
   df$Hour <- lubridate::hour(df[,datetime]) + lubridate::minute(df[,datetime])/60
@@ -39,14 +41,19 @@ formatting_fluxes_REddyProc <- function(df,
 
   df$Rg <- df[,rg_col]
   df$Tair <- df[,tair_col]
-  df$Tsoil <- df[,tsoil_col]
+  if(isTRUE(use_tsoil_col)) df$Tsoil <- df[,tsoil_col]
   df$rH <- df[,rh_col]
   df$VPD <- df[,vpd_col]*10 #to convert it to hPa from kPa
   df$Ustar <- df[,ustar_col]
 
   ####
+  if(isTRUE(use_tsoil_col)) {
+    all_vars <- c("Year","DoY","Hour",FLUX,"LE","H","Rg","Tair","Tsoil","rH","VPD","Ustar")
+  } else {
+    all_vars <- c("Year","DoY","Hour",FLUX,"LE","H","Rg","Tair","rH","VPD","Ustar")
+  }
 
-  df_ReddyProc <- df[,c("Year","DoY","Hour",FLUX,"LE","H","Rg","Tair","Tsoil","rH","VPD","Ustar")]
+  df_ReddyProc <- df[, all_vars]
   df_ReddyProc[is.na(df_ReddyProc)] <- -9999
 
   headers <- colnames(df_ReddyProc)
@@ -55,7 +62,11 @@ formatting_fluxes_REddyProc <- function(df,
   if(FLUX == "NEE") unit_flux <- "umolm-2s-1"
   if(FLUX == "H2O") unit_flux <- "mmolm-2s-1"
 
-  units <- c("-", "-", "-",	unit_flux,	"Wm-2",	"Wm-2",	"Wm-2",	"degC",	"degC",	"%", "hPa",	"ms-1")
+  if(isTRUE(use_tsoil_col)) {
+    all_units <- c("-", "-", "-",	unit_flux,	"Wm-2",	"Wm-2",	"Wm-2",	"degC",	"degC",	"%", "hPa",	"ms-1")
+  } else {
+    all_units <- c("-", "-", "-",	unit_flux,	"Wm-2",	"Wm-2",	"Wm-2",	"degC",	"%", "hPa",	"ms-1")
+  }
 
   if(is.null(filename)) {
     saving_file_name <- file.path(saving_path,  paste0("For_ReddyProc_", FLUX, ".txt"))
@@ -87,7 +98,7 @@ formatting_fluxes_REddyProc <- function(df,
 
   if(file_check == TRUE) {
     sink(saving_file_name)
-    cat(cat(headers,sep="\t"),cat("\n"),cat(units, sep="\t"), sep = "\n")
+    cat(cat(headers,sep="\t"),cat("\n"),cat(all_units, sep="\t"), sep = "\n")
     sink()
     data.table::fwrite(df_ReddyProc, file = saving_file_name, sep="\t", append = TRUE, col.names = FALSE)
   }

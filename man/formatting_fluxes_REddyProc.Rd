@@ -16,7 +16,8 @@ formatting_fluxes_REddyProc(
   vpd_col = "VPD_f",
   ustar_col = "u*",
   saving_path,
-  filename = NULL
+  filename = NULL,
+  use_tsoil_col = TRUE
 )
 }
 \arguments{
@@ -44,6 +45,8 @@ If following the standard workflow, use the output from the quality check}
 \item{saving_path}{saving folder path where the formatted file will be saved}
 
 \item{filename}{WITHOUT extension. name to be appended to saving_path to create full path name. If NULL, a default name will be written}
+
+\item{use_tsoil_col}{Boolean variable, default is TRUE, set to FALSE TO IGNORE TSOIL}
 }
 \value{
 No value returned, but a file saved to disk
