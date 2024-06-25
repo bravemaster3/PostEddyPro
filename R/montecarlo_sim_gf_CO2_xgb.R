@@ -52,8 +52,9 @@ montecarlo_sim_gf_CO2_xgb <- function(mc_sim_path,
     df$predicted <- stats::predict(xgb_final, newdata = xgboost::xgb.DMatrix(as.matrix(sapply(df %>%
                                                                                                 dplyr::select(-dplyr::one_of(c(flux_col, datetime))), as.numeric))))
 
-    df <- df %>% dplyr::mutate(co2_flux_final_filled = ifelse(!is.na(co2_flux_final),co2_flux_final,predicted),
-                               quality = ifelse(!is.na(co2_flux_final),"original","gapfilled"))
+    df <- df %>%
+      dplyr::mutate(!!paste0(flux_col,"_filled") := ifelse(!is.na(!!sym(flux_col)), !!sym(flux_col), predicted),
+                    quality = ifelse(!is.na(!!sym(flux_col)), "original", "gapfilled"))
 
     #preparing saving path
 
