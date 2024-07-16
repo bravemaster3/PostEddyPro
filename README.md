@@ -10,6 +10,7 @@
 - **Gap Filling**: Utilizes machine learning algorithms like XGBoost and Random Forest for accurate gap filling.
 - **Unit Conversions**: Simplifies the conversion process between different units.
 - **Monte Carlo Simulation**: Enables robust statistical analysis.
+- **Many more functions. Checkout the help after installation, e.g. in R Studio.
 
 ## Installation
 
