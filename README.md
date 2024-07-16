@@ -20,7 +20,7 @@ You can install the development version from GitHub:
 devtools::install_github("bravemaster3/PostEddyPro")
 ```
 
-For more detailed usage, you can refer to the (PostEddyPro_Temp_Vignette)[https://github.com/bravemaster3/PostEddyPro_Temp_Vignette].
+For more detailed usage, you can refer to the [PostEddyPro_Temp_Vignette](https://github.com/bravemaster3/PostEddyPro_Temp_Vignette).
 
 ## Contributions
 Contributions are welcome! Feel free to fork the repository and submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
