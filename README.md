@@ -25,5 +25,5 @@ For more detailed usage, you can refer to the [PostEddyPro_Temp_Vignette](https:
 ## Contributions
 Contributions are welcome! Feel free to fork the repository and submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
 
-License
+## License
 This project is licensed under the MIT License.
