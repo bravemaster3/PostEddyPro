@@ -8,7 +8,7 @@
 #' @param latitude latitude of the site
 #' @param timezone timezone as a signed integer (e.g. 1 for UTC+1)
 #' @param gapfill_flux boolean. Default is TRUE. Set to false if gapfilling of NEE has been performed before and do only partitioning. Keep to true even if gapfilling was performed before if you want to get a gapfilling uncertainty estimate as NEE_fsd
-#' @param filter_ustar boolean. Default is FALSE. Set to true if
+#' @param filter_ustar boolean. Default is FALSE. Set to true if you want to perform ustar filtering and then gapfill the new gaps created by uStar filtering using MDS. Note that in that case NEE_uStar_f instead of NEE_f will equal Reco-GPP_f. Reco and GPP_f are actually renamed in this function from Reco_uStar and GPP_uStar_f
 #'
 #' @return No value returned, but a file saved to disk
 #' @export
