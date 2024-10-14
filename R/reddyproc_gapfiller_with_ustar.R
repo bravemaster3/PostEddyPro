@@ -7,20 +7,18 @@
 #' @param longitude longitude of the site
 #' @param latitude latitude of the site
 #' @param timezone timezone as a signed integer (e.g. 1 for UTC+1)
-#' @param gapfill_flux boolean. Default is TRUE. Set to false if gapfilling of NEE has been performed before and do only partitioning. Keep to true even if gapfilling was performed before if you want to get a gapfilling uncertainty estimate as NEE_fsd
-#' @param filter_ustar boolean. Default is FALSE. Set to true if
+#' @param gapfill_flux boolean. Default is TRUE. Set to false if gapfilling of NEE has been performed before and do only partitioning.
 #'
 #' @return No value returned, but a file saved to disk
 #' @export
-reddyproc_gapfiller <- function(formatted_file_path,
+reddyproc_gapfiller_with_ustar <- function(formatted_file_path,
                                 saving_folder,
                                 file_name=NULL,
                                 FLUX=c("NEE","H2O"), #either of them
                                 longitude=19.556646,
                                 latitude=64.181980,
                                 timezone=1,
-                                gapfill_flux=TRUE,
-                                filter_ustar=FALSE){
+                                gapfill_flux=TRUE){
   #i=1 #turn on for testing
   all_df <- REddyProc::fLoadTXTIntoDataframe(formatted_file_path)
 
@@ -48,20 +46,20 @@ reddyproc_gapfiller <- function(formatted_file_path,
       EddyProc.C$sMDSGapFill('Tair', FillAll=FALSE)  	# Gap-filled Tair needed for partitioning and gapfilling
       EddyProc.C$sMDSGapFill('VPD', FillAll=FALSE)  	# Gap-filled VPD needed for gapfilling
       EddyProc.C$sMDSGapFill('Rg', FillAll=FALSE)     #Fill only the gaps for the meteo condition, e.g. 'Rg'
-      EddyProc.C$sMDSGapFill(FLUX, FillAll=gapfill_flux)     #Fill all values to estimate flux uncertainties, and creates NEE_f
+      EddyProc.C$sMDSGapFill(FLUX, FillAll=gapfill_flux)     #Fill all values to estimate flux uncertainties
       #USTAR THRESHOLD
 
-      if(isTRUE(filter_ustar)){
-        EddyProc.C$sEstimateUstarScenarios(
-          nSample = 100L, probs = c(0.05, 0.5, 0.95))
-        # message("ARRIVED HERE")
-        EddyProc.C$sGetEstimatedUstarThresholdDistribution()
+      EddyProc.C$sEstimateUstarScenarios(
+        nSample = 100L, probs = c(0.05, 0.5, 0.95))
+      # message("ARRIVED HERE")
+      EddyProc.C$sGetEstimatedUstarThresholdDistribution()
 
-        EddyProc.C$sMDSGapFillUStarScens(FLUX) # Creates NEE_uStar_f
-        if(FLUX == "NEE") EddyProc.C$sMRFluxPartitionUStarScens()
-      } else {
-        if(FLUX == "NEE") EddyProc.C$sMRFluxPartition()
-      }
+      EddyProc.C$sMDSGapFillUStarScens(FLUX)
+
+      #+++ Partition NEE into GPP and respiration
+      # if(FLUX == "NEE")  EddyProc.C$sMRFluxPartition()# EddyProc.C$sMRFluxPartitionUStarScens()	# night time partitioning -> Reco, GPP
+
+      if(FLUX == "NEE") EddyProc.C$sMRFluxPartitionUStarScens()
 
       #+++ Export gap filled and partitioned data to standard data frame
       FilledEddyData.F <- EddyProc.C$sExportResults()
@@ -91,10 +89,8 @@ reddyproc_gapfiller <- function(formatted_file_path,
   if(is.null(file_name)) file_name <- paste0("For_ReddyProc_", FLUX, "_GF.txt")
 
   # message(str(CombinedData.F))
-  if(isTRUE(filter_ustar)){
-    names(results_df)[which(names(results_df) == "GPP_uStar_f")] <- "GPP_f"
-    names(results_df)[which(names(results_df) == "Reco_uStar")] <- "Reco"
-  }
+  names(results_df)[which(names(results_df) == "GPP_uStar_f")] <- "GPP_f"
+  names(results_df)[which(names(results_df) == "Reco_uStar")] <- "Reco"
   # View(CombinedData.F)
   REddyProc::fWriteDataframeToFile(results_df, file_name, saving_folder) #update the output file path
 
