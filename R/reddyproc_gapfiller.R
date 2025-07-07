@@ -28,8 +28,20 @@ reddyproc_gapfiller <- function(formatted_file_path,
   for (year in unique(all_df$Year)){
     message(paste("Now gapfilling/partitionning Year:", year))
     year_index = year_index+1
+    # EddyData.F <- all_df %>%
+    #   dplyr::filter(Year == year)
+    ###################################
+    start_dt <- lubridate::ymd_hms(paste(year, "01", "01", "00:30:00"), tz = "UTC")
+    end_dt <- lubridate::ymd_hms(paste(year + 1, "01", "01", "00:00:00"), tz = "UTC")
+
     EddyData.F <- all_df %>%
-      dplyr::filter(Year == year)
+      mutate(
+        date = ymd(paste(Year, "01", "01", sep = "-"), tz = "UTC") + days(DoY - 1),
+        datetime = date + seconds(Hour * 3600)
+      ) %>%
+      filter(datetime >= start_dt & datetime <= end_dt) %>%
+      select(-datetime, -date)
+    #############################
 
     tryCatch({
 
