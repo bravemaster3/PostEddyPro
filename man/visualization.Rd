@@ -13,7 +13,10 @@ visualization(
   biomet_df = NULL,
   date_format = "\%Y-\%m-\%d",
   plot_co2 = TRUE,
-  plot_ch4 = TRUE
+  plot_ch4 = TRUE,
+  ylim_co2 = c(-15, 15),
+  ylim_ch4 = c(-0.2, 0.2),
+  ylim_h2o = c(-1.5, 8)
 )
 }
 \arguments{
@@ -34,6 +37,12 @@ visualization(
 \item{plot_co2}{logical, TRUE (default) for plotting also CO2, FALSE otherwise}
 
 \item{plot_ch4}{logical, TRUE (default) for plotting also CH4, FALSE otherwise}
+
+\item{ylim_co2}{y-axis limits of the co2_flux plot}
+
+\item{ylim_ch4}{y-axis limits of the ch4_flux plot}
+
+\item{ylim_h2o}{y-axis limits of the h2o_flux plot}
 }
 \value{
 a named list, $data is a dataframe merged from flux and biomet files, $graphs is a graph of all gas fluxes

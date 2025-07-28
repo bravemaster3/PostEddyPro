@@ -9,6 +9,9 @@
 #' @param date_format If the eddypro output has not been altered, the date format is "\%Y-\%m-\%d", the default. If it has been opened in excel for instance, the date format is likely "\%d/\%m/\%Y"
 #' @param plot_co2 logical, TRUE (default) for plotting also CO2, FALSE otherwise
 #' @param plot_ch4 logical, TRUE (default) for plotting also CH4, FALSE otherwise
+#' @param ylim_co2 y-axis limits of the co2_flux plot
+#' @param ylim_ch4 y-axis limits of the ch4_flux plot
+#' @param ylim_h2o y-axis limits of the h2o_flux plot
 #'
 #' @return a named list, $data is a dataframe merged from flux and biomet files, $graphs is a graph of all gas fluxes
 #' @export
@@ -20,7 +23,10 @@ visualization <- function(check_path_EC = TRUE,
                           biomet_df = NULL,
                           date_format="%Y-%m-%d",
                           plot_co2 = TRUE,
-                          plot_ch4 = TRUE
+                          plot_ch4 = TRUE,
+                          ylim_co2=c(-15,15),
+                          ylim_ch4=c(-0.2,0.2),
+                          ylim_h2o=c(-1.5,8)
                           ){
 
   #checking that either paths or dfs have been provided
@@ -74,7 +80,8 @@ visualization <- function(check_path_EC = TRUE,
   h2o <- ggplot2::ggplot(data=fluxes_meteo, ggplot2::aes_string(x="datetime", y="h2o_flux"))+
     ggplot2::geom_point(size=0.8)+
     ggplot2::geom_hline(yintercept = 0)+
-    ggplot2::ylim(-1.5,8)+
+    # ggplot2::ylim(-1.5,8)+
+    ggplot2::ylim(ylim_h2o)+
     ggplot2::theme_bw()+
     ggplot2::theme(axis.title.x=ggplot2::element_blank(),
                    axis.text.x=ggplot2::element_blank())
@@ -84,7 +91,8 @@ visualization <- function(check_path_EC = TRUE,
   if(plot_co2 == TRUE){
     co2 <- ggplot2::ggplot(data=fluxes_meteo, ggplot2::aes_string(x="datetime", y="co2_flux"))+
       ggplot2::geom_point(size=0.8)+
-      ggplot2::ylim(-10,15)+
+      # ggplot2::ylim(-10,15)+
+      ggplot2::ylim(ylim_co2)+
       ggplot2::geom_hline(yintercept = 0)+
       ggplot2::theme_bw()
    if(plot_ch4 == TRUE){
@@ -103,7 +111,8 @@ visualization <- function(check_path_EC = TRUE,
       ggplot2::geom_point(size=0.8)+
       ggplot2::xlab("date")+
       ggplot2::geom_hline(yintercept = 0)+
-      ggplot2::ylim(-0.2,0.2)+
+      # ggplot2::ylim(-0.2,0.2)+
+      ggplot2::ylim(ylim_ch4)+
       ggplot2::theme_bw()
 
     # list_plots <- c(list_plots, ch4)
