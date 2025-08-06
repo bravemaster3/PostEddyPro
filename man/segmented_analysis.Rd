@@ -2,29 +2,58 @@
 % Please edit documentation in R/segmented_analysis.R
 \name{segmented_analysis}
 \alias{segmented_analysis}
-\title{Segmented Regression Analysis with Visualization}
+\title{Segmented Regression Analysis using Nonlinear Least Squares}
 \usage{
-segmented_analysis(x, y)
+segmented_analysis(x, y, t = 0.4, a = -0.1, b = 0.04, c = 0.2)
 }
 \arguments{
 \item{x}{A numeric vector of x-values (predictor variable)}
 
 \item{y}{A numeric vector of y-values (response variable)}
+
+\item{t}{Initial guess for the x-coordinate of the breakpoint (default: 0.4)}
+
+\item{a}{Initial guess for the slope before the breakpoint (default: -0.1)}
+
+\item{b}{Initial guess for the y-value at the breakpoint (default: 0.04)}
+
+\item{c}{Initial guess for the slope after the breakpoint (default: 0.2)}
 }
 \value{
 A list containing:
   \describe{
     \item{breakpoint_x}{The x-coordinate of the estimated breakpoint}
-    \item{breakpoint_y}{The y-coordinate of the estimated breakpoint}
-    \item{plot}{A ggplot object showing the data points, fitted segmented line, and breakpoint}
-    \item{model}{The fitted segmented regression model object}
+    \item{breakpoint_y}{The y-coordinate at the estimated breakpoint}
+    \item{plot}{A ggplot object showing the data points, fitted segmented line,
+                 and breakpoint location with dashed reference lines}
+    \item{model}{The fitted nls model object}
+    \item{summary}{Summary statistics of the fitted model}
   }
 }
 \description{
 Performs segmented regression analysis to identify a single breakpoint in the
-relationship between two variables and creates a visualization of the results.
-The function fits a piecewise linear regression model and returns the breakpoint
-coordinates along with a ggplot visualization.
+relationship between two variables using nonlinear least squares (NLS).
+The function fits a piecewise linear regression model with different slopes
+before and after the breakpoint, and returns the breakpoint coordinates along
+with a ggplot visualization.
+}
+\details{
+The function fits a piecewise linear model of the form:
+\itemize{
+  \item{For x < t: y = a*(x-t) + b}
+  \item{For x >= t: y = c*(x-t) + b}
+}
+where t is the breakpoint location, b is the y-value at the breakpoint,
+a is the slope before the breakpoint, and c is the slope after the breakpoint.
+
+The model is fitted using nonlinear least squares (nls), which requires
+initial guesses for all parameters. Good initial values, especially for the
+breakpoint location t, are crucial for convergence.
+}
+\note{
+The convergence of the NLS algorithm depends heavily on the initial parameter values.
+If the function fails to converge, try adjusting the initial guesses, particularly
+the breakpoint location t, based on visual inspection of the data.
 }
 \examples{
 # Example with sample data showing a clear breakpoint
@@ -33,7 +62,7 @@ x_data <- c(0.465, 0.574, 0.636, 0.686, 0.734, 0.782,
 y_data <- c(0.114, 0.141, 0.156, 0.162, 0.175, 0.181,
             0.191, 0.198, 0.207, 0.216, 0.237, 0.274)
 
-# Run segmented analysis
+# Run segmented analysis with default initial values
 results <- segmented_analysis(x_data, y_data)
 
 # View breakpoint coordinates
@@ -43,6 +72,14 @@ cat("Breakpoint Y:", round(results$breakpoint_y, 3), "\n")
 # Display the plot
 print(results$plot)
 
-# Access the underlying segmented model
-summary(results$model)
+# Access the underlying model coefficients
+coef(results$model)
+
+# Example with custom initial values for better convergence
+results_custom <- segmented_analysis(x_data, y_data,
+                                     t = 0.9,   # Breakpoint guess
+                                     a = 0.2,   # Left slope guess
+                                     b = 0.2,   # Y-value at breakpoint
+                                     c = 0.3)   # Right slope guess
+
 }
