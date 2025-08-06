@@ -65,6 +65,9 @@ segmented_analysis <- function(x, y) {
 
   data <- data[complete.cases(data),]
 
+  x <- data$x
+  y <- data$y
+
   # Fit linear model
   lm_model <- stats::lm(y ~ x, data = data)
 
