@@ -17,7 +17,8 @@ formatting_fluxes_REddyProc(
   ustar_col = "u*",
   saving_path,
   filename = NULL,
-  use_tsoil_col = TRUE
+  use_tsoil_col = TRUE,
+  convert_vpd_kpa_to_hpa = TRUE
 )
 }
 \arguments{
@@ -47,6 +48,8 @@ If following the standard workflow, use the output from the quality check}
 \item{filename}{WITHOUT extension. name to be appended to saving_path to create full path name. If NULL, a default name will be written}
 
 \item{use_tsoil_col}{Boolean variable, default is TRUE, set to FALSE TO IGNORE TSOIL}
+
+\item{convert_vpd_kpa_to_hpa}{Boolean variable, default is TRUE, converts VPD from kpa to hpa if TRUE}
 }
 \value{
 No value returned, but a file saved to disk

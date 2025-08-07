@@ -14,6 +14,7 @@
 #' @param saving_path saving folder path where the formatted file will be saved
 #' @param filename WITHOUT extension. name to be appended to saving_path to create full path name. If NULL, a default name will be written
 #' @param use_tsoil_col Boolean variable, default is TRUE, set to FALSE TO IGNORE TSOIL
+#' @param convert_vpd_kpa_to_hpa Boolean variable, default is TRUE, converts VPD from kpa to hpa if TRUE
 #'
 #' @return No value returned, but a file saved to disk
 #' @export
@@ -29,7 +30,8 @@ formatting_fluxes_REddyProc <- function(df,
                                         ustar_col = "u*",
                                         saving_path,
                                         filename = NULL,
-                                        use_tsoil_col = TRUE){
+                                        use_tsoil_col = TRUE,
+                                        convert_vpd_kpa_to_hpa = TRUE){
   df$Year <- lubridate::year(df[,datetime])
   df$DoY <- lubridate::yday(df[,datetime])
   df$Hour <- lubridate::hour(df[,datetime]) + lubridate::minute(df[,datetime])/60
@@ -43,7 +45,9 @@ formatting_fluxes_REddyProc <- function(df,
   df$Tair <- df[,tair_col]
   if(isTRUE(use_tsoil_col)) df$Tsoil <- df[,tsoil_col]
   df$rH <- df[,rh_col]
-  df$VPD <- df[,vpd_col]*10 #to convert it to hPa from kPa
+  if(isTRUE(convert_vpd_kpa_to_hpa)){
+    df$VPD <- df[,vpd_col]*10 #to convert it to hPa from kPa
+  }
   df$Ustar <- df[,ustar_col]
 
   ####
