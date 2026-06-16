@@ -79,7 +79,10 @@ quality_control <- function(fluxes_meteo,
   median <- median(fluxes_meteo[,paste0(flux_col,"_final")], na.rm = T)
   mean <- mean(fluxes_meteo[,paste0(flux_col,"_final")], na.rm = T)
   stdev <- stats::sd(fluxes_meteo[,paste0(flux_col,"_final")], na.rm = T)
-  print(paste0("u* threshold: ", list_ustar$ustar_thresh))
+  if(ustar==TRUE){
+    print(paste0("u* threshold: ", list_ustar$ustar_thresh))
+  }
+
   print(paste0("median: ", median))
   print(paste0("mean: ", mean))
   print(paste0("stdev: ", stdev))
