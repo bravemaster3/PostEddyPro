@@ -39,9 +39,11 @@ merge_2_EC_date <- function(path_EC1,
   #removing rows after and before the datetime_merge
   datetime_merge <- str_posix(datetime_merge)
 
+  names(fluxes_1) <- make.unique(names(fluxes_1))
   fluxes_1 <- fluxes_1 %>%
     dplyr::filter(datetime < datetime_merge)
 
+  names(fluxes_2) <- make.unique(names(fluxes_2))
   fluxes_2 <- fluxes_2 %>%
     dplyr::filter(datetime >= datetime_merge)
 
