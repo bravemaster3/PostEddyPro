@@ -40,10 +40,10 @@ merge_2_EC_date <- function(path_EC1,
   datetime_merge <- str_posix(datetime_merge)
 
   fluxes_1 <- fluxes_1 %>%
-    filter(datetime < datetime_merge)
+    dplyr::filter(datetime < datetime_merge)
 
   fluxes_2 <- fluxes_2 %>%
-    filter(datetime >= datetime_merge)
+    dplyr::filter(datetime >= datetime_merge)
 
 
   #Merging both EC files
