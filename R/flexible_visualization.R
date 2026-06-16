@@ -14,11 +14,9 @@
 #' @param ylim_h2o y-axis limits of the h2o_flux plot
 #' @param contains_ch4_flux logical, TRUE (default) if the EddyPro output contains CH4 flux data. Set to FALSE for sites that do not measure CH4 — this will override \code{plot_ch4} and suppress CH4 plotting entirely regardless of its value.
 #'
-#' @return
+#' @return a named list, $data is a dataframe merged from flux and biomet files, $graphs is a graph of all gas fluxes
 #' @export
-#'
-#' @examples
-visualization <- function(
+flexible_visualization <- function(
     check_path_EC = TRUE,
     check_path_biomet = TRUE,
     path_EC = NULL,
