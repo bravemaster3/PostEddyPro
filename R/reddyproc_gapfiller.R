@@ -104,6 +104,8 @@ reddyproc_gapfiller <- function(formatted_file_path,
 
   # message(str(CombinedData.F))
   if(isTRUE(filter_ustar)){
+    results_df$NEE_f_ori <- results_df$NEE_f
+    results_df$NEE_f <- results_df$NEE_uStar_f
     names(results_df)[which(names(results_df) == "GPP_uStar_f")] <- "GPP_f"
     names(results_df)[which(names(results_df) == "Reco_uStar")] <- "Reco"
   }

@@ -89,6 +89,8 @@ reddyproc_gapfiller_with_ustar <- function(formatted_file_path,
   if(is.null(file_name)) file_name <- paste0("For_ReddyProc_", FLUX, "_GF.txt")
 
   # message(str(CombinedData.F))
+  results_df$NEE_f_ori <- results_df$NEE_f
+  results_df$NEE_f <- results_df$NEE_uStar_f
   names(results_df)[which(names(results_df) == "GPP_uStar_f")] <- "GPP_f"
   names(results_df)[which(names(results_df) == "Reco_uStar")] <- "Reco"
   # View(CombinedData.F)
